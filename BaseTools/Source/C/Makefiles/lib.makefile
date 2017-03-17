@@ -13,6 +13,8 @@
 
 include $(MAKEROOT)/Makefiles/header.makefile
 
+BUILD_CFLAGS += -Wno-error
+
 LIBRARY = $(MAKEROOT)/libs/lib$(LIBNAME).a
 
 all: $(MAKEROOT)/libs $(LIBRARY) 
