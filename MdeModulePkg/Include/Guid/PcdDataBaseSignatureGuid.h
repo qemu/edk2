@@ -62,11 +62,6 @@ typedef struct  {
 } DYNAMICEX_MAPPING;
 
 typedef struct {
-  UINT32  SkuDataStartOffset;   // Offset(with DATUM TYPE info) from the PCD_DB.
-  UINT32  SkuIdTableOffset;     // Offset from the PCD_DB.
-} SKU_HEAD;
-
-typedef struct {
   UINT32  StringIndex;          // Offset in String Table in units of UINT8.
   UINT32  DefaultValueOffset;   // Offset of the Default Value.
   UINT16  GuidTableIndex;       // Offset in Guid Table in units of GUID.
@@ -115,7 +110,6 @@ typedef struct {
     // Padding is needed to keep necessary alignment
     //
     //SKU_ID                         SkuIdTable[];            // SkuIds system supports.
-    //SKU_ID                         SkuIndexTable[];         // SkuIds for each PCD with SKU enable.
     //UINT64                         ValueUint64[];
     //UINT32                         ValueUint32[];
     //VPD_HEAD                       VpdHead[];               // VPD Offset
@@ -125,7 +119,6 @@ typedef struct {
     //STRING_HEAD                    StringHead[];            // String PCD
     //PCD_NAME_INDEX                 PcdNameTable[];          // PCD name index info. It can be accessed by the PcdNameTableOffset.
     //VARIABLE_HEAD                  VariableHead[];          // HII PCD
-    //SKU_HEAD                       SkuHead[];               // Store SKU info for each PCD with SKU enable.
     //UINT8                          StringTable[];           // String for String PCD value and HII PCD Variable Name. It can be accessed by StringTableOffset.
     //SIZE_INFO                      SizeTable[];             // MaxSize and CurSize for String PCD. It can be accessed by SizeTableOffset.
     //UINT16                         ValueUint16[];
@@ -172,6 +165,26 @@ typedef struct {
   // Default data is stored as variable storage or the array of DATA_DELTA. 
   //
 } DEFAULT_DATA;
+
+typedef struct {
+  UINT16    SkuId;
+  UINT16    SkuIdCompared;
+  UINT32    Length;
+  //DATA_DELTA   DeltaData[]
+} PCD_DATABASE_SKU_DELTA;
+
+//
+// PCD database layout:
+// +---------------------------------+
+// | PCD_DATABASE_INIT (DEFAULT SKU) |
+// +---------------------------------+
+// | DATA_DELTA (SKU A)              |
+// +---------------------------------+
+// | DATA_DELTA (SKU B)              |
+// +---------------------------------+
+// | ......                          |
+// +---------------------------------+
+//
 
 #pragma pack()
 

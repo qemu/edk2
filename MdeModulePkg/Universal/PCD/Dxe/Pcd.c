@@ -282,8 +282,9 @@ DxePcdSetSku (
   IN  UINTN         SkuId
   )
 {
-  SKU_ID    *SkuIdTable;
-  UINTN     Index;
+  SKU_ID     *SkuIdTable;
+  UINTN      Index;
+  EFI_STATUS Status;
 
   if (SkuId == mPcdDatabase.DxeDb->SystemSkuId) {
     //
@@ -307,9 +308,12 @@ DxePcdSetSku (
   SkuIdTable = (SKU_ID *) ((UINT8 *) mPcdDatabase.DxeDb + mPcdDatabase.DxeDb->SkuIdTableOffset);
   for (Index = 0; Index < SkuIdTable[0]; Index++) {
     if (SkuId == SkuIdTable[Index + 1]) {
-      DEBUG ((EFI_D_INFO, "PcdDxe - Set current SKU Id to 0x%lx.\n", (SKU_ID) SkuId));
-      mPcdDatabase.DxeDb->SystemSkuId = (SKU_ID) SkuId;
-      return;
+      Status = UpdatePcdDatabase (SkuId, TRUE);
+      if (!EFI_ERROR (Status)) {
+        mPcdDatabase.DxeDb->SystemSkuId = (SKU_ID) SkuId;
+        DEBUG ((EFI_D_INFO, "PcdDxe - Set current SKU Id to 0x%lx.\n", (SKU_ID) SkuId));
+        return;
+      }
     }
   }
 
