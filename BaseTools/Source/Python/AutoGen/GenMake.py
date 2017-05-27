@@ -569,7 +569,7 @@ cleanlib:
 
         # INC_LIST is special
         FileMacro = ""
-        IncludePathList = []
+        IncludePathList = []  # [IncPrefix + r"C:\Users\bfeng1\workspace\pycparser\utils\fake_libc_include"]
         for P in  self._AutoGenObject.IncludePathList:
             IncludePathList.append(IncPrefix + self.PlaceMacro(P, self.Macros))
             if FileBuildRule.INC_LIST_MACRO in self.ListFileMacros:

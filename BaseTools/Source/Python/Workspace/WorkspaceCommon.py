@@ -15,6 +15,7 @@ from Common.Misc import sdict
 from Common.DataType import SUP_MODULE_USER_DEFINED
 from BuildClassObject import LibraryClassObject
 import Common.GlobalData as GlobalData
+from Workspace.BuildClassObject import StructurePcd
 
 ## Get all packages from platform for specified arch, target and toolchain
 #
@@ -34,6 +35,38 @@ def GetPackageList(Platform, BuildDatabase, Arch, Target, Toolchain):
             PkgSet.update(Lib.Packages)
     return list(PkgSet)
 
+
+def ProcessStructurePcd(StructurePcdRawDataSet):
+    s_pcd_set = dict()
+    for s_pcd in StructurePcdRawDataSet:
+        if s_pcd.TokenSpaceGuidCName not in s_pcd_set:
+            s_pcd_set[s_pcd.TokenSpaceGuidCName] = []
+        s_pcd_set[s_pcd.TokenSpaceGuidCName].append(s_pcd)
+    
+    str_pcd_set = []    
+    for pcdname in s_pcd_set:
+        dep_pkgs = []
+        struct_pcd = StructurePcd() 
+        for item in s_pcd_set[pcdname]:
+            if "<HeaderFiles>" in item.TokenCName:
+                struct_pcd.StructuredPcdIncludeFile = item.DefaultValue
+            elif "<Packages>" in item.TokenCName:
+                dep_pkgs.append(item.DefaultValue)
+            elif item.DatumType == item.TokenCName:
+                struct_pcd.copy(item)
+                struct_pcd.TokenValue.strip("{").strip()
+                struct_pcd.TokenSpaceGuidCName, struct_pcd.TokenCName = pcdname.split(".")
+            else:
+                struct_pcd.AddDefaultValue(item.TokenCName, item.DefaultValue)
+            
+        struct_pcd.PackageDecs = dep_pkgs
+        
+        str_pcd_set.append(struct_pcd)
+        
+    return str_pcd_set
+                    
+    
+
 ## Get all declared PCD from platform for specified arch, target and toolchain
 #
 #  @param Platform: DscBuildData instance
@@ -46,10 +79,14 @@ def GetPackageList(Platform, BuildDatabase, Arch, Target, Toolchain):
 def GetDeclaredPcd(Platform, BuildDatabase, Arch, Target, Toolchain):
     PkgList = GetPackageList(Platform, BuildDatabase, Arch, Target, Toolchain)
     DecPcds = {}
+#     StructurePcdRawData = []
     for Pkg in PkgList:
         for Pcd in Pkg.Pcds:
             PcdCName = Pcd[0]
             PcdTokenName = Pcd[1]
+#             if "." in PcdTokenName:
+#                 StructurePcdRawData.append(Pkg.Pcds[Pcd])
+#                 continue
             if GlobalData.MixedPcd:
                 for PcdItem in GlobalData.MixedPcd.keys():
                     if (PcdCName, PcdTokenName) in GlobalData.MixedPcd[PcdItem]:
@@ -57,6 +94,9 @@ def GetDeclaredPcd(Platform, BuildDatabase, Arch, Target, Toolchain):
                         break
             if (PcdCName, PcdTokenName) not in DecPcds.keys():
                 DecPcds[PcdCName, PcdTokenName] = Pkg.Pcds[Pcd]
+#     StructurePcds = ProcessStructurePcd(StructurePcdRawData)
+#     for pcd in StructurePcds:
+#         DecPcds[pcd.TokenCName, pcd.TokenSpaceGuidCName] = pcd
     return DecPcds
 
 ## Get all dependent libraries for a module

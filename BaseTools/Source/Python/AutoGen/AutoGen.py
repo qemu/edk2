@@ -309,8 +309,8 @@ class WorkspaceAutoGen(AutoGen):
 
         EdkLogger.verbose("\nFLASH_DEFINITION = %s" % self.FdfFile)
 
-        if Progress:
-            Progress.Start("\nProcessing meta-data")
+#         if Progress:
+#             Progress.Start("\nProcessing meta-data")
 
         if self.FdfFile:
             #
@@ -3944,7 +3944,7 @@ class ModuleAutoGen(AutoGen):
                     elif BoolValue == 'FALSE':
                         Pcd.DefaultValue = '0'
 
-                if Pcd.DatumType != 'VOID*':
+                if Pcd.DatumType in ['UINT8', 'UINT16', 'UINT32', 'UINT64', 'BOOLEAN']:
                     HexFormat = '0x%02x'
                     if Pcd.DatumType == 'UINT16':
                         HexFormat = '0x%04x'
