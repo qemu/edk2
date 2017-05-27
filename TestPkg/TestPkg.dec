@@ -1,0 +1,56 @@
+## @file  TestPkg.dec
+#
+# Copyright (c) 2016, Intel Corporation. All rights reserved.<BR>
+# This program and the accompanying materials are licensed and made available under
+# the terms and conditions of the BSD License that accompanies this distribution.
+# The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php.
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+##
+
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = TestPkg
+  PACKAGE_GUID                   = F05BB314-CD00-4705-BD04-59B1CD9630E1
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+  Include
+
+[LibraryClasses]
+
+[Guids]
+  ## MdeModule package token space guid
+  # Include/Guid/MdeModulePkgTokenSpace.h
+  gEfiStructuredPcdPkgTokenSpaceGuid       = { 0x11a81069, 0xa6a2, 0x420a, { 0xa0, 0xe, 0x30, 0xc5, 0xb, 0xfb, 0xe8, 0x13 } }
+
+[PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
+  # @Prompt Test Strucutre
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test|{0xFF, 0xFF}|TEST|0x00010071 {
+    <HeaderFiles>
+      Guid/Test.h
+    <Packages>
+      MdePkg/MdePkg.dec
+      TestPkg/TestPkg.dec
+  }
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test.FlexibleArray[7]|5
+  
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test2|{0xFF, 0xFF}|TEST2|0x00010072 {
+    <HeaderFiles>
+      Guid/Test2.h
+    <Packages>
+      MdePkg/MdePkg.dec
+      TestPkg/TestPkg.dec
+  }
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray[7]|5
+  
