@@ -12,6 +12,9 @@ Structure PCD is to support the same C structure/Enum/Macro definition in PCD an
 fields in a VOID* PCD in DEC/DSC/FDF/CL. It includes the group of the sub features. 
 https://bugzilla.tianocore.org/show_bug.cgi?id=541 [BaseTools] Extended PCD Value Syntax to support the flexible value formats
 https://bugzilla.tianocore.org/show_bug.cgi?id=542 [BaseTools] Structure PCD value assignment in DEC/DSC
+  The first version POC has been added to support FixedAtBuild and Patchable StructurePcd value assignment in dec and dsc file.
+  TestPkg DEC/DSC and Application shows StructurePcd declaration, value assignment and consumed in source code.
+  TestPkg Application can directly be built with build command.
 https://bugzilla.tianocore.org/show_bug.cgi?id=543 [BaseTools] Extended SKU Support - Inheritance
 https://bugzilla.tianocore.org/show_bug.cgi?id=544 [BaseTools] PCD: Extended SKU support 2 - sub SKU
 https://bugzilla.tianocore.org/show_bug.cgi?id=545 [BaseTools] Support Bit fields used as EFI VarStore/Buffer VarStore in VFR
