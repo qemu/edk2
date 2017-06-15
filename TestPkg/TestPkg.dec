@@ -32,7 +32,8 @@
   # @Prompt Test Strucutre
   gEfiStructuredPcdPkgTokenSpaceGuid.Test|{0xFF, 0xFF}|TEST|0x00010071 {
     <HeaderFiles>
-      Guid/Test.h
+      Guid/Test.h   # for Guid/Ppi/Protocol, reuse header file.
+      # Pcd/PcdTest.h # New Pcd directory in Include dir for PCD only
     <Packages>
       MdePkg/MdePkg.dec
       TestPkg/TestPkg.dec
