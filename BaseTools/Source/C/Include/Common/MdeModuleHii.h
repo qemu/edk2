@@ -1,7 +1,7 @@
 /** @file
   EDK II specific HII relative definition.
 
-  Copyright (c) 2006 - 2014, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2006 - 2017, Intel Corporation. All rights reserved.<BR>
 
   This program and the accompanying materials are licensed and made available
   under the terms and conditions of the BSD License which accompanies this
@@ -42,6 +42,16 @@
 #define EFI_IFR_EXTEND_OP_TIMEOUT     0x2
 #define EFI_IFR_EXTEND_OP_CLASS       0x3
 #define EFI_IFR_EXTEND_OP_SUBCLASS    0x4
+
+///
+/// EDKII implementation extension flags, used to indaicate the disply style and bit width for bit filed storage.
+///
+#define EFI_IFR_DISPLAY_BIT            0xC0
+#define EFI_IFR_DISPLAY_INT_DEC_BIT    0x00
+#define EFI_IFR_DISPLAY_UINT_DEC_BIT   0x40
+#define EFI_IFR_DISPLAY_UINT_HEX_BIT   0x80
+
+#define EFI_IFR_NUMERIC_SIZE_BIT       0x3F
 
 ///
 /// Label opcode.

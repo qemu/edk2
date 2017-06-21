@@ -22,7 +22,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include "VfrError.h"
 
 extern BOOLEAN  VfrCompatibleMode;
+extern EFI_GUID gBitVarstoreGuid;
 
+#define MAX_BIT_WIDTH                      32
 #define MAX_NAME_LEN                       64
 #define MAX_STRING_LEN                     0x100
 #define DEFAULT_ALIGN                      1
@@ -116,6 +118,8 @@ struct SVfrDataField {
   SVfrDataType              *mFieldType;
   UINT32                    mOffset;
   UINT32                    mArrayNum;
+  BOOLEAN                   mIsBitField;
+  UINT8                     mBitWidth;
   SVfrDataField             *mNext;
 };
 
@@ -124,6 +128,7 @@ struct SVfrDataType {
   UINT8                     mType;
   UINT32                    mAlign;
   UINT32                    mTotalSize;
+  BOOLEAN                   mHasBitField;
   SVfrDataField             *mMembers;
   SVfrDataType              *mNext;
 };
@@ -185,6 +190,7 @@ public:
 
 private:
   SVfrDataType              *mDataTypeList;
+  SVfrDataType              *mBitsTypeList;
 
   SVfrDataType              *mNewDataType;
   SVfrDataType              *mCurrDataType;
@@ -192,12 +198,13 @@ private:
 
   VOID InternalTypesListInit (VOID);
   VOID RegisterNewType (IN SVfrDataType *);
+  VOID RegisterNewBitsType (IN SVfrDataType *);
 
   EFI_VFR_RETURN_CODE ExtractStructTypeName (IN CHAR8 *&, OUT CHAR8 *);
   EFI_VFR_RETURN_CODE GetTypeField (IN CONST CHAR8 *, IN SVfrDataType *, IN SVfrDataField *&);
-  EFI_VFR_RETURN_CODE GetFieldOffset (IN SVfrDataField *, IN UINT32, OUT UINT32 &);
+  EFI_VFR_RETURN_CODE GetFieldOffset (IN SVfrDataField *, IN UINT32, OUT UINT32 &, IN  BOOLEAN, IN  BOOLEAN);
   UINT8               GetFieldWidth (IN SVfrDataField *);
-  UINT32              GetFieldSize (IN SVfrDataField *, IN UINT32);
+  UINT32              GetFieldSize (IN SVfrDataField *, IN UINT32, IN BOOLEAN);
 
 public:
   CVfrVarDataTypeDB (VOID);
@@ -206,7 +213,9 @@ public:
   VOID                DeclareDataTypeBegin (VOID);
   EFI_VFR_RETURN_CODE SetNewTypeName (IN CHAR8 *);
   EFI_VFR_RETURN_CODE DataTypeAddField (IN CHAR8 *, IN CHAR8 *, IN UINT32, IN BOOLEAN);
-  VOID                DeclareDataTypeEnd (VOID);
+  EFI_VFR_RETURN_CODE DataTypeAddBitField (IN CHAR8 *, IN CHAR8 *, IN UINT32);
+  VOID                DeclareDataTypeEnd (IN BOOLEAN);
+  VOID                ChangeFieldToBitRepresentation( IN SVfrDataType *, IN BOOLEAN);
 
   EFI_VFR_RETURN_CODE GetDataType (IN CHAR8 *, OUT SVfrDataType **);
   EFI_VFR_RETURN_CODE GetDataTypeSize (IN CHAR8 *, OUT UINT32 *);
@@ -215,6 +224,8 @@ public:
 
   EFI_VFR_RETURN_CODE GetUserDefinedTypeNameList (OUT CHAR8 ***, OUT UINT32 *);
   EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN CHAR8 *&, OUT CHAR8 *, OUT UINT32 &);
+  BOOLEAN             DataTypeHasBitField (IN  CHAR8 *);
+  BOOLEAN             IsThisBitField (IN  CHAR8 *);
 
   BOOLEAN             IsTypeNameDefined (IN CHAR8 *);
 
@@ -238,7 +249,8 @@ typedef enum {
   EFI_VFR_VARSTORE_INVALID,
   EFI_VFR_VARSTORE_BUFFER,
   EFI_VFR_VARSTORE_EFI,
-  EFI_VFR_VARSTORE_NAME
+  EFI_VFR_VARSTORE_NAME,
+  EFI_VFR_VARSTORE_BUFFER_BITS
 } EFI_VFR_VARSTORE_TYPE;
 
 struct SVfrVarStorageNode {
@@ -268,7 +280,7 @@ struct SVfrVarStorageNode {
 
 public:
   SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN EFI_STRING_ID, IN UINT32, IN BOOLEAN Flag = TRUE);
-  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN SVfrDataType *, IN BOOLEAN Flag = TRUE);
+  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN SVfrDataType *,IN BOOLEAN, IN BOOLEAN Flag = TRUE);
   SVfrVarStorageNode (IN CHAR8 *, IN EFI_VARSTORE_ID);
   ~SVfrVarStorageNode (VOID);
 
@@ -285,6 +297,7 @@ struct EFI_VARSTORE_INFO {
   } mInfo;
   UINT8                     mVarType;
   UINT32                    mVarTotalSize;
+  BOOLEAN                   mIsBitVar;
 
   EFI_VARSTORE_INFO (VOID);
   EFI_VARSTORE_INFO (IN EFI_VARSTORE_INFO &);
@@ -310,6 +323,7 @@ private:
   struct SVfrVarStorageNode *mBufferVarStoreList;
   struct SVfrVarStorageNode *mEfiVarStoreList;
   struct SVfrVarStorageNode *mNameVarStoreList;
+  struct SVfrVarStorageNode *mBitsBufferStoreList;
 
   struct SVfrVarStorageNode *mCurrVarStorageNode;
   struct SVfrVarStorageNode *mNewVarStorageNode;
@@ -343,7 +357,7 @@ public:
 
   EFI_VFR_RETURN_CODE DeclareEfiVarStore (IN CHAR8 *, IN EFI_GUID *, IN EFI_STRING_ID, IN UINT32, IN BOOLEAN Flag = TRUE);
 
-  EFI_VFR_RETURN_CODE DeclareBufferVarStore (IN CHAR8 *, IN EFI_GUID *, IN CVfrVarDataTypeDB *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN BOOLEAN Flag = TRUE);
+  EFI_VFR_RETURN_CODE DeclareBufferVarStore (IN CHAR8 *, IN EFI_GUID *, IN CVfrVarDataTypeDB *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN BOOLEAN, IN BOOLEAN Flag = TRUE);
 
   EFI_VFR_RETURN_CODE GetVarStoreId (IN CHAR8 *, OUT EFI_VARSTORE_ID *, IN EFI_GUID *VarGuid = NULL);
   EFI_VFR_VARSTORE_TYPE GetVarStoreType (IN EFI_VARSTORE_ID);

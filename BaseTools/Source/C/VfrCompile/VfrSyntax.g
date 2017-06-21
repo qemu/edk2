@@ -334,7 +334,7 @@ vfrPragmaPackDefinition :
   {
     N2:StringIdentifier                             << _PCATCH(gCVfrVarDataTypeDB.SetNewTypeName (N2->getText()), N2); >>
   }
-  ";"                                               << gCVfrVarDataTypeDB.DeclareDataTypeEnd ();>>
+  ";"                                               << gCVfrVarDataTypeDB.DeclareDataTypeEnd (TRUE);>>
   ;
 
 vfrDataStructDefinition :
@@ -349,7 +349,7 @@ vfrDataStructDefinition :
   {
     N2:StringIdentifier                             << _PCATCH(gCVfrVarDataTypeDB.SetNewTypeName (N2->getText()), N2); >>
   }
-  ";"                                               << gCVfrVarDataTypeDB.DeclareDataTypeEnd (); >>
+  ";"                                               << gCVfrVarDataTypeDB.DeclareDataTypeEnd (FALSE); >>
   ;
 
 vfrDataStructFields [BOOLEAN  FieldInUnion]:
@@ -363,7 +363,11 @@ vfrDataStructFields [BOOLEAN  FieldInUnion]:
      dataStructFieldDate  [FieldInUnion] |
      dataStructFieldTime  [FieldInUnion] |
      dataStructFieldRef   [FieldInUnion] |
-     dataStructFieldUser [FieldInUnion]
+     dataStructFieldUser [FieldInUnion]  |
+     dataStructBitField64 |
+     dataStructBitField32 |
+     dataStructBitField16 |
+     dataStructBitField8
   )*
   ;
 
@@ -467,6 +471,46 @@ dataStructFieldUser [BOOLEAN  FieldInUnion]:
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText(), I->getLine()); >>
   }
   ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), T->getText(), ArrayNum, FieldInUnion), T); >>
+  ;
+
+dataStructBitField64:
+  << UINT32 Width = 0;>>
+  D:"UINT64"
+  N:StringIdentifier
+  {
+    ":" I:Number              << Width = _STOU32(I->getText(), I->getLine());>>
+  }
+  ";"                         << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddBitField (N->getText(), D->getText(), Width), N); >>
+  ;
+
+dataStructBitField32:
+  << UINT32 Width = 0;>>
+  D:"UINT32"
+  N:StringIdentifier
+  {
+    ":" I:Number              << Width = _STOU32(I->getText(), I->getLine());>>
+  }
+  ";"                         << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddBitField (N->getText(), D->getText(),  Width), N); >>
+  ;
+
+dataStructBitField16:
+  << UINT32 Width = 0;>>
+  D:"UINT16"
+  N:StringIdentifier
+  {
+    ":" I:Number              << Width = _STOU32(I->getText(), I->getLine());>>
+  }
+  ";"                         << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddBitField (N->getText(), D->getText(),  Width), N); >>
+  ;
+
+dataStructBitField8:
+  << UINT32 Width = 0;>>
+  D:"UINT8"
+  N:StringIdentifier
+  {
+    ":" I:Number              << Width = _STOU32(I->getText(), I->getLine());>>
+  }
+  ";"                         << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddBitField (N->getText(), D->getText(), Width), N); >>
   ;
 
 //*****************************************************************************
@@ -874,10 +918,11 @@ vfrStatementVarStoreLinear :
      UINT32          LineNum;
      EFI_VARSTORE_ID VarStoreId = EFI_VARSTORE_ID_INVALID;
      UINT32          Size;
+     BOOLEAN         IsBitVarStore = FALSE;
   >>
   V:Varstore                                        << VSObj.SetLineNo(V->getLine()); >>
   (
-      TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); >>
+      TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); IsBitVarStore = gCVfrVarDataTypeDB.DataTypeHasBitField (TN->getText());>>
     | U8:"UINT8" ","                                << TypeName = U8->getText(); LineNum = U8->getLine(); >>
     | U16:"UINT16" ","                              << TypeName = U16->getText(); LineNum = U16->getLine(); >>
     | C16:"CHAR16" ","                              << TypeName = (CHAR8 *) "UINT16"; LineNum = C16->getLine(); >>
@@ -912,12 +957,13 @@ vfrStatementVarStoreLinear :
                                                          StoreName = SN->getText();
                                                        }
                                                        _PCATCH(gCVfrDataStorage.DeclareBufferVarStore (
-                                                                                  StoreName,
-                                                                                  &Guid,
-                                                                                  &gCVfrVarDataTypeDB,
-                                                                                  TypeName,
-                                                                                  VarStoreId
-                                                                                  ), LineNum);
+                                                                                StoreName,
+                                                                                &Guid,
+                                                                                &gCVfrVarDataTypeDB,
+                                                                                TypeName,
+                                                                                VarStoreId,
+                                                                                IsBitVarStore
+                                                                                ), LineNum);
                                                        VSObj.SetGuid (&Guid);
                                                        _PCATCH(gCVfrDataStorage.GetVarStoreId(StoreName, &VarStoreId, &Guid), SN);
                                                        VSObj.SetVarStoreId (VarStoreId);
@@ -940,10 +986,11 @@ vfrStatementVarStoreEfi :
      UINT32          LineNum;
      CHAR8           *StoreName = NULL;
      BOOLEAN         CustomizedName = FALSE;
+     BOOLEAN         IsBitVarStore = FALSE;
   >>
   E:Efivarstore                                     << VSEObj.SetLineNo(E->getLine()); >>
   (
-      TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); CustomizedName = TRUE; >>
+      TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); CustomizedName = TRUE; IsBitVarStore = gCVfrVarDataTypeDB.DataTypeHasBitField (TN->getText());>>
     | U8:"UINT8" ","                                << TypeName = U8->getText(); LineNum = U8->getLine(); >>
     | U16:"UINT16" ","                              << TypeName = U16->getText(); LineNum = U16->getLine(); >>
     | C16:"CHAR16" ","                              << TypeName = (CHAR8 *) "UINT16"; LineNum = C16->getLine(); >>
@@ -1004,26 +1051,28 @@ vfrStatementVarStoreEfi :
   Uuid "=" guidDefinition[Guid]                     << 
                                                        if (IsUEFI23EfiVarstore) {
                                                        _PCATCH(gCVfrDataStorage.DeclareBufferVarStore (
-                                                                                  StoreName,
-                                                                                  &Guid,
-                                                                                  &gCVfrVarDataTypeDB,
-                                                                                  TypeName,
-                                                                                  VarStoreId
-                                                                                  ), LineNum);                                                        
+                                                                                    StoreName,
+                                                                                    &Guid,
+                                                                                    &gCVfrVarDataTypeDB,
+                                                                                    TypeName,
+                                                                                    VarStoreId,
+                                                                                    IsBitVarStore
+                                                                                    ), LineNum);
                                                          _PCATCH(gCVfrDataStorage.GetVarStoreId(StoreName, &VarStoreId, &Guid), SN);
                                                          _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), LineNum);
                                                        } else {
-                                                        _PCATCH(gCVfrDataStorage.DeclareBufferVarStore (
+                                                       _PCATCH(gCVfrDataStorage.DeclareBufferVarStore (
                                                                                   TN->getText(),
                                                                                   &Guid,
                                                                                   &gCVfrVarDataTypeDB,
                                                                                   TypeName,
-                                                                                  VarStoreId
-                                                                                  ), LineNum);                                                      
+                                                                                  VarStoreId,
+                                                                                  FALSE
+                                                                                  ), LineNum);
                                                          _PCATCH(gCVfrDataStorage.GetVarStoreId(TN->getText(), &VarStoreId, &Guid), VN);
                                                          _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), N->getLine());
                                                        }
-                                                       VSEObj.SetGuid (&Guid);                                                       
+                                                       VSEObj.SetGuid (&Guid);
                                                        VSEObj.SetVarStoreId (VarStoreId);
                                                        
                                                        VSEObj.SetSize ((UINT16) Size);
@@ -1141,6 +1190,58 @@ vfrStatementHeader[CIfrStatementHeader *SHObj] :
   Help   "=" "STRING_TOKEN" "\(" S2:Number "\)"     << $SHObj->SetHelp (_STOSID(S2->getText(), S2->getLine())); >>
   ;
 
+vfrQuestionBaseInfo[EFI_VARSTORE_INFO & Info, EFI_QUESTION_ID & QId,EFI_QUESION_TYPE QType = QUESTION_NORMAL]:
+ <<
+    CHAR8             *QName    = NULL;
+    CHAR8             *VarIdStr = NULL;
+    mUsedDefaultCount           = 0;
+ >>
+ {
+   Name "=" QN:StringIdentifier ","                <<
+                                                      QName = QN->getText();
+                                                      _PCATCH(mCVfrQuestionDB.FindQuestion (QName), VFR_RETURN_UNDEFINED, QN, "has already been used please used anther name");
+                                                   >>
+ }
+ { V:VarId "=" vfrStorageVarId[Info, VarIdStr] "," }
+ {
+   QuestionId "=" ID:Number ","                    <<
+                                                      QId = _STOQID(ID->getText(), ID->getLine());
+                                                      _PCATCH(mCVfrQuestionDB.FindQuestion (QId), VFR_RETURN_UNDEFINED, ID, "has already been used please assign another number");
+                                                   >>
+ }
+                                                   <<
+                                                      switch (QType) {
+                                                      case QUESTION_NORMAL:
+                                                        mCVfrQuestionDB.RegisterQuestion (QName, VarIdStr, QId);
+                                                        break;
+                                                      case QUESTION_DATE:
+                                                        mCVfrQuestionDB.RegisterNewDateQuestion (QName, VarIdStr, QId);
+                                                        break;
+                                                      case QUESTION_TIME:
+                                                        mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
+                                                        break;
+                                                      case QUESTION_REF:
+                                                        //
+                                                        // VarIdStr != NULL stand for question with storagae.
+                                                        //
+                                                        if (VarIdStr != NULL) {
+                                                          mCVfrQuestionDB.RegisterRefQuestion (QName, VarIdStr, QId);
+                                                        } else {
+                                                          mCVfrQuestionDB.RegisterQuestion (QName, NULL, QId);
+                                                        }
+                                                        break;
+                                                      default:
+                                                      _PCATCH(VFR_RETURN_FATAL_ERROR);
+                                                      }
+                                                   >>
+                                                   <<
+                                                      if (VarIdStr != NULL) {
+                                                        delete VarIdStr;
+                                                      }
+                                                      _SAVE_CURRQEST_VARINFO (Info);
+                                                   >>
+ ;
+
 vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_NORMAL]:
   <<
      EFI_VARSTORE_INFO Info;
@@ -1148,60 +1249,16 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
      Info.mVarTotalSize          = 0;
      Info.mInfo.mVarOffset       = EFI_VAROFFSET_INVALID;
      Info.mVarStoreId            = EFI_VARSTORE_ID_INVALID;
+     Info.mIsBitVar              = FALSE;
      EFI_QUESTION_ID   QId       = EFI_QUESTION_ID_INVALID;
-     CHAR8             *QName    = NULL;
-     CHAR8             *VarIdStr = NULL;
-     mUsedDefaultCount           = 0;
   >>
-  {
-    Name "=" QN:StringIdentifier ","                <<
-                                                       QName = QN->getText();
-                                                       _PCATCH(mCVfrQuestionDB.FindQuestion (QName), VFR_RETURN_UNDEFINED, QN, "has already been used please used anther name");
-                                                    >>
-  }
-  { V:VarId "=" vfrStorageVarId[Info, VarIdStr] "," }
-  {
-    QuestionId "=" ID:Number ","                    <<
-                                                       QId = _STOQID(ID->getText(), ID->getLine());
-                                                       _PCATCH(mCVfrQuestionDB.FindQuestion (QId), VFR_RETURN_UNDEFINED, ID, "has already been used please assign another number");
-                                                    >>
-  }
-                                                    <<
-                                                       switch (QType) {
-                                                       case QUESTION_NORMAL:
-                                                         mCVfrQuestionDB.RegisterQuestion (QName, VarIdStr, QId);
-                                                         break;
-                                                       case QUESTION_DATE:
-                                                         mCVfrQuestionDB.RegisterNewDateQuestion (QName, VarIdStr, QId);
-                                                         break;
-                                                       case QUESTION_TIME:
-                                                         mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
-                                                         break;
-                                                       case QUESTION_REF:
-                                                         //
-                                                         // VarIdStr != NULL stand for question with storagae.
-                                                         //
-                                                         if (VarIdStr != NULL) {
-                                                           mCVfrQuestionDB.RegisterRefQuestion (QName, VarIdStr, QId);
-                                                         } else {
-                                                           mCVfrQuestionDB.RegisterQuestion (QName, NULL, QId);
-                                                         }
-                                                         break;
-                                                       default:
-                                                       _PCATCH(VFR_RETURN_FATAL_ERROR);
-                                                       }
-                                                       $QHObj.SetQuestionId (QId);
-                                                       if (VarIdStr != NULL) {
-                                                        $QHObj.SetVarStoreInfo (&Info);
-                                                       }
+  vfrQuestionBaseInfo[Info, QId, QType]
+                                                    << $QHObj.SetQuestionId (QId);
+                                                        if (Info.mVarStoreId != EFI_VARSTORE_ID_INVALID) {
+                                                          $QHObj.SetVarStoreInfo (&Info);
+                                                        }
                                                     >>
   vfrStatementHeader[&$QHObj]
-                                                    << 
-                                                       if (VarIdStr != NULL) {
-                                                         delete VarIdStr; 
-                                                       }
-                                                       _SAVE_CURRQEST_VARINFO (Info);
-                                                    >>
   ;
 
 questionheaderFlagsField[UINT8 & Flags] :
@@ -1270,6 +1327,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr, BOOLEAN CheckFl
                                                                              &gCVfrVarDataTypeDB,
                                                                              SName,
                                                                              EFI_VARSTORE_ID_INVALID,
+                                                                             FALSE,
                                                                              FALSE
                                                                              );
                                                           VfrReturnCode = gCVfrDataStorage.GetVarStoreId(SName, &$Info.mVarStoreId, &mFormsetGuid);
@@ -1301,7 +1359,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr, BOOLEAN CheckFl
                                                        if (CheckFlag || VfrReturnCode == VFR_RETURN_SUCCESS) {
                                                          _PCATCH(VfrReturnCode, SN2);
                                                          VarStoreType = gCVfrDataStorage.GetVarStoreType ($Info.mVarStoreId);
-                                                         if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
+                                                         if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_BUFFER_BITS) {
                                                            _PCATCH(gCVfrDataStorage.GetBufferVarStoreDataTypeName(Info.mVarStoreId, &TName), SN2);
                                                            _STRCAT(&VarStr, TName);
                                                          }
@@ -1311,7 +1369,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr, BOOLEAN CheckFl
     (
       "."                                           <<
                                                        if (CheckFlag || VfrReturnCode == VFR_RETURN_SUCCESS) {
-                                                         _PCATCH(((VarStoreType != EFI_VFR_VARSTORE_BUFFER) ? VFR_RETURN_EFIVARSTORE_USE_ERROR : VFR_RETURN_SUCCESS), SN2);
+                                                         _PCATCH((((VarStoreType != EFI_VFR_VARSTORE_BUFFER) && (VarStoreType != EFI_VFR_VARSTORE_BUFFER_BITS))? VFR_RETURN_EFIVARSTORE_USE_ERROR : VFR_RETURN_SUCCESS), SN2);
                                                        }
                                                        _STRCAT(&VarIdStr, "."); _STRCAT(&VarStr, ".");
                                                     >>
@@ -1357,7 +1415,28 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr, BOOLEAN CheckFl
                                                                     $Info.mVarTotalSize,
                                                                     Dummy),
                                                                  SN2->getLine());
-                                                         _PCATCH(gCVfrDataStorage.AddBufferVarStoreFieldInfo(&$Info ),SN2->getLine());
+                                                         _PCATCH(gCVfrDataStorage.AddBufferVarStoreFieldInfo(&$Info),SN2->getLine());
+                                                         break;
+                                                       case EFI_VFR_VARSTORE_BUFFER_BITS:
+                                                         _PCATCH(gCVfrVarDataTypeDB.GetDataFieldInfo (VarStr, $Info.mInfo.mVarOffset, $Info.mVarType, $Info.mVarTotalSize), SN2->getLine(), VarStr);
+                                                         VarGuid = gCVfrDataStorage.GetVarStoreGuid($Info.mVarStoreId);
+                                                         _PCATCH((EFI_VFR_RETURN_CODE)gCVfrBufferConfig.Register (
+                                                                    SName,
+                                                                    VarGuid,
+                                                                    NULL),
+                                                                 SN2->getLine());
+                                                         _PCATCH((EFI_VFR_RETURN_CODE)gCVfrBufferConfig.Write (
+                                                                    'a',
+                                                                    SName,
+                                                                    VarGuid,
+                                                                    NULL,
+                                                                    $Info.mVarType,
+                                                                    $Info.mInfo.mVarOffset,
+                                                                    $Info.mVarTotalSize,
+                                                                    Dummy),
+                                                                 SN2->getLine());
+                                                         _PCATCH(gCVfrDataStorage.AddBufferVarStoreFieldInfo(&$Info),SN2->getLine());
+                                                         Info.mIsBitVar = gCVfrVarDataTypeDB.IsThisBitField (VarStr);
                                                          break;
                                                        case EFI_VFR_VARSTORE_NAME:
                                                        default: break;
@@ -1438,86 +1517,90 @@ vfrConstantValueField[UINT8 Type, EFI_IFR_TYPE_VALUE &Value, BOOLEAN &ListType] 
       "\-"                                          << Negative = TRUE;  >>
     }
     N1:Number                                       <<
-                                                       switch ($Type) {
-                                                       case EFI_IFR_TYPE_NUM_SIZE_8 :
-                                                         $Value.u8 = _STOU8(N1->getText(), N1->getLine());
-                                                         if (IntDecStyle) {
-                                                           if (Negative) {
-                                                             if ($Value.u8 > 0x80) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT8 type can't big than 0x7F, small than -0x80");
-                                                             }
-                                                           } else {
-                                                             if ($Value.u8 > 0x7F) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT8 type can't big than 0x7F, small than -0x80");
-                                                             }
-                                                           }
-                                                         }
-                                                         if (Negative) {
-                                                           $Value.u8 = ~$Value.u8 + 1;
-                                                         }
-                                                       break;
-                                                       case EFI_IFR_TYPE_NUM_SIZE_16 :
-                                                         $Value.u16 = _STOU16(N1->getText(), N1->getLine());
-                                                         if (IntDecStyle) {
-                                                           if (Negative) {
-                                                             if ($Value.u16 > 0x8000) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT16 type can't big than 0x7FFF, small than -0x8000");
-                                                             }
-                                                           } else {
-                                                             if ($Value.u16 > 0x7FFF) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT16 type can't big than 0x7FFF, small than -0x8000");
-                                                             }
-                                                           }
-                                                         }
-                                                         if (Negative) {
-                                                           $Value.u16 = ~$Value.u16 + 1;
-                                                         }
-                                                       break;
-                                                       case EFI_IFR_TYPE_NUM_SIZE_32 :
+                                                       if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
                                                          $Value.u32    = _STOU32(N1->getText(), N1->getLine());
-                                                         if (IntDecStyle) {
-                                                           if (Negative) {
-                                                             if ($Value.u32 > 0x80000000) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT32 type can't big than 0x7FFFFFFF, small than -0x80000000");
-                                                             }
-                                                           } else {
-                                                             if ($Value.u32 > 0X7FFFFFFF) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT32 type can't big than 0x7FFFFFFF, small than -0x80000000");
-                                                             }
-                                                           }
-                                                         }
-                                                         if (Negative) {
-                                                           $Value.u32 = ~$Value.u32 + 1;
-                                                         }
-                                                       break;
-                                                       case EFI_IFR_TYPE_NUM_SIZE_64 :
-                                                         $Value.u64    = _STOU64(N1->getText(), N1->getLine());
-                                                         if (IntDecStyle) {
-                                                           if (Negative) {
-                                                             if ($Value.u64 > 0x8000000000000000) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT64 type can't big than 0x7FFFFFFFFFFFFFFF, small than -0x8000000000000000");
-                                                             }
-                                                           } else {
-                                                             if ($Value.u64 > 0x7FFFFFFFFFFFFFFF) {
-                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT64 type can't big than 0x7FFFFFFFFFFFFFFF, small than -0x8000000000000000");
+                                                       } else {
+                                                         switch ($Type) {
+                                                         case EFI_IFR_TYPE_NUM_SIZE_8 :
+                                                           $Value.u8 = _STOU8(N1->getText(), N1->getLine());
+                                                           if (IntDecStyle) {
+                                                             if (Negative) {
+                                                               if ($Value.u8 > 0x80) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT8 type can't big than 0x7F, small than -0x80");
+                                                               }
+                                                             } else {
+                                                               if ($Value.u8 > 0x7F) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT8 type can't big than 0x7F, small than -0x80");
+                                                               }
                                                              }
                                                            }
+                                                           if (Negative) {
+                                                             $Value.u8 = ~$Value.u8 + 1;
+                                                           }
+                                                         break;
+                                                         case EFI_IFR_TYPE_NUM_SIZE_16 :
+                                                           $Value.u16 = _STOU16(N1->getText(), N1->getLine());
+                                                           if (IntDecStyle) {
+                                                             if (Negative) {
+                                                               if ($Value.u16 > 0x8000) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT16 type can't big than 0x7FFF, small than -0x8000");
+                                                               }
+                                                             } else {
+                                                               if ($Value.u16 > 0x7FFF) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT16 type can't big than 0x7FFF, small than -0x8000");
+                                                               }
+                                                             }
+                                                           }
+                                                           if (Negative) {
+                                                             $Value.u16 = ~$Value.u16 + 1;
+                                                           }
+                                                         break;
+                                                         case EFI_IFR_TYPE_NUM_SIZE_32 :
+                                                           $Value.u32    = _STOU32(N1->getText(), N1->getLine());
+                                                           if (IntDecStyle) {
+                                                             if (Negative) {
+                                                               if ($Value.u32 > 0x80000000) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT32 type can't big than 0x7FFFFFFF, small than -0x80000000");
+                                                               }
+                                                             } else {
+                                                               if ($Value.u32 > 0X7FFFFFFF) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT32 type can't big than 0x7FFFFFFF, small than -0x80000000");
+                                                               }
+                                                             }
+                                                           }
+                                                           if (Negative) {
+                                                             $Value.u32 = ~$Value.u32 + 1;
+                                                           }
+                                                         break;
+                                                         case EFI_IFR_TYPE_NUM_SIZE_64 :
+                                                           $Value.u64    = _STOU64(N1->getText(), N1->getLine());
+                                                           if (IntDecStyle) {
+                                                             if (Negative) {
+                                                               if ($Value.u64 > 0x8000000000000000) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT64 type can't big than 0x7FFFFFFFFFFFFFFF, small than -0x8000000000000000");
+                                                               }
+                                                             } else {
+                                                               if ($Value.u64 > 0x7FFFFFFFFFFFFFFF) {
+                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, N1->getLine(), "INT64 type can't big than 0x7FFFFFFFFFFFFFFF, small than -0x8000000000000000");
+                                                               }
+                                                             }
+                                                           }
+                                                           if (Negative) {
+                                                             $Value.u64 = ~$Value.u64 + 1;
+                                                           }
+                                                         break;
+                                                         case EFI_IFR_TYPE_BOOLEAN :
+                                                           $Value.b      = _STOU8(N1->getText(), N1->getLine());
+                                                         break;
+                                                         case EFI_IFR_TYPE_STRING :
+                                                           $Value.string = _STOU16(N1->getText(), N1->getLine());
+                                                         break;
+                                                         case EFI_IFR_TYPE_TIME :
+                                                         case EFI_IFR_TYPE_DATE :
+                                                         case EFI_IFR_TYPE_REF  :
+                                                         default :
+                                                         break;
                                                          }
-                                                         if (Negative) {
-                                                           $Value.u64 = ~$Value.u64 + 1;
-                                                         }
-                                                       break;
-                                                       case EFI_IFR_TYPE_BOOLEAN :
-                                                         $Value.b      = _STOU8(N1->getText(), N1->getLine());
-                                                       break;
-                                                       case EFI_IFR_TYPE_STRING :
-                                                         $Value.string = _STOU16(N1->getText(), N1->getLine());
-                                                       break;
-                                                       case EFI_IFR_TYPE_TIME :
-                                                       case EFI_IFR_TYPE_DATE :
-                                                       case EFI_IFR_TYPE_REF  :
-                                                       default :
-                                                       break;
                                                        }
                                                     >>
   | B1:True                                         << $Value.b      = TRUE; >>
@@ -1691,29 +1774,29 @@ vfrStatementDefault :
                                                         if (gCurrentMinMaxData != NULL && gCurrentMinMaxData->IsNumericOpcode()) {
                                                           //check default value is valid for Numeric Opcode
                                                           NumericQst = (CIfrNumeric *) gCurrentQuestion;
-                                                          if ((NumericQst->GetNumericFlags() & EFI_IFR_DISPLAY) == 0) {
+                                                          if ((NumericQst->GetNumericFlags() & EFI_IFR_DISPLAY) == 0 && !(_GET_CURRQEST_VARTINFO().mIsBitVar)) {
                                                             switch (_GET_CURRQEST_DATATYPE()) {
                                                             case EFI_IFR_TYPE_NUM_SIZE_8:
-                                                              if (((INT8) Val->u8 < (INT8) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE())) || 
-                                                                  ((INT8) Val->u8 > (INT8) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE()))) {
+                                                              if (((INT8) Val->u8 < (INT8) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE(), FALSE)) ||
+                                                                  ((INT8) Val->u8 > (INT8) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE(), FALSE))) {
                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
                                                               }
                                                               break;
                                                             case EFI_IFR_TYPE_NUM_SIZE_16:
-                                                              if (((INT16) Val->u16 < (INT16) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE())) || 
-                                                                  ((INT16) Val->u16 > (INT16) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE()))) {
+                                                              if (((INT16) Val->u16 < (INT16) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE(), FALSE)) ||
+                                                                  ((INT16) Val->u16 > (INT16) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE(), FALSE))) {
                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
                                                               }
                                                               break;
                                                             case EFI_IFR_TYPE_NUM_SIZE_32:
-                                                              if (((INT32) Val->u32 < (INT32) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE())) || 
-                                                                  ((INT32) Val->u32 > (INT32) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE()))) {
+                                                              if (((INT32) Val->u32 < (INT32) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE(), FALSE)) ||
+                                                                  ((INT32) Val->u32 > (INT32) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE(), FALSE))) {
                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
                                                               }
                                                               break;
                                                             case EFI_IFR_TYPE_NUM_SIZE_64:
-                                                              if (((INT64) Val->u64 < (INT64) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE())) || 
-                                                                  ((INT64) Val->u64 > (INT64) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE()))) {
+                                                              if (((INT64) Val->u64 < (INT64) gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE(), FALSE)) ||
+                                                                  ((INT64) Val->u64 > (INT64) gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE(), FALSE))) {
                                                                 _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
                                                               }
                                                               break;
@@ -1721,8 +1804,14 @@ vfrStatementDefault :
                                                               break;
                                                             }
                                                           } else {
-                                                            if (Val->u64 < gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE()) || Val->u64 > gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE())) {
+                                                            if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                              if (Val->u32 < gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE(), TRUE) || Val->u32 > gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE(), TRUE)) {
                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
+                                                              }
+                                                            } else {
+                                                              if (Val->u64 < gCurrentMinMaxData->GetMinData(_GET_CURRQEST_DATATYPE(), FALSE) || Val->u64 > gCurrentMinMaxData->GetMaxData(_GET_CURRQEST_DATATYPE(), FALSE)) {
+                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, D->getLine(), "Numeric default value must be between MinValue and MaxValue.");
+                                                              }
                                                             }
                                                           }
                                                         }
@@ -1761,7 +1850,11 @@ vfrStatementDefault :
                                                               break;
                                                           }
                                                         } else {
-                                                          _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &Size), D->getLine());
+                                                          if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            Size = sizeof (UINT32);
+                                                          } else {
+                                                            _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &Size), D->getLine());
+                                                          }
                                                         }
                                                         Size += OFFSET_OF (EFI_IFR_DEFAULT, Value);
                                                         DObj = new CIfrDefault ((UINT8)Size);
@@ -1771,7 +1864,11 @@ vfrStatementDefault :
                                                         } else if (gIsStringOp) {
                                                           DObj->SetType (EFI_IFR_TYPE_STRING);
                                                         } else {
-                                                          DObj->SetType (_GET_CURRQEST_DATATYPE());
+                                                          if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            DObj->SetType (EFI_IFR_TYPE_NUM_SIZE_32);
+                                                          } else {
+                                                            DObj->SetType (_GET_CURRQEST_DATATYPE());
+                                                          }
                                                         }
                                                         DObj->SetValue(*Val);
                                                     >>
@@ -2178,35 +2275,66 @@ vfrStatementBooleanType :
 //
 vfrStatementCheckBox :
   <<
-     CIfrCheckBox       CBObj;
+     CIfrCheckBox       *CBObj = NULL;
      EFI_IFR_TYPE_VALUE Val = gZeroEfiIfrTypeValue;
      CHAR8              *VarStoreName = NULL;
      UINT32             DataTypeSize;
      EFI_GUID           *VarStoreGuid = NULL;
+     CIfrGuid           *GuidObj = NULL;
+     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;;
+     EFI_VARSTORE_INFO Info;
+     Info.mVarType               = EFI_IFR_TYPE_OTHER;
+     Info.mVarTotalSize          = 0;
+     Info.mInfo.mVarOffset       = EFI_VAROFFSET_INVALID;
+     Info.mVarStoreId            = EFI_VARSTORE_ID_INVALID;
+     Info.mIsBitVar              = FALSE;
   >>
-  L:CheckBox                                           << CBObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeader[CBObj] ","                         << //check data type
+  L:CheckBox
+  vfrQuestionBaseInfo[Info, QId]                       <<
+                                                         if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                           GuidObj = new CIfrGuid(0);
+                                                           GuidObj->SetGuid (&gBitVarstoreGuid);
+                                                           GuidObj->SetLineNo(L->getLine());
+                                                         }
+                                                         CBObj = new CIfrCheckBox;
+                                                         CBObj->SetLineNo(L->getLine());
+                                                         CBObj->SetQuestionId (QId);
+                                                         CBObj->SetVarStoreInfo (&Info);
+                                                        >>
+  vfrStatementHeader[CBObj]","                           << //check data type
                                                           if (_GET_CURRQEST_DATATYPE() == EFI_IFR_TYPE_OTHER) {
                                                             _GET_CURRQEST_VARTINFO().mVarType = EFI_IFR_TYPE_BOOLEAN;
                                                           }
                                                           if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
-                                                            _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
-                                                            if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
-                                                              _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid doesn't support array");
-                                                            } else if ((gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId) == EFI_VFR_VARSTORE_BUFFER) &&
-                                                                      (_GET_CURRQEST_VARSIZE() != sizeof (BOOLEAN))) {
-                                                              _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid only support BOOLEAN data type");
+                                                            //
+                                                            // Check whether the question refers to a bit field, if yes. create a Guid to
+                                                            // indicate the question refers to a bit field.
+                                                            //
+                                                            if (_GET_CURRQEST_VARTINFO ().mIsBitVar) {
+                                                              _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
+                                                               if ((gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId) == EFI_VFR_VARSTORE_BUFFER_BITS) &&
+                                                                        (_GET_CURRQEST_VARSIZE() != 1)) {
+                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid only occupy 1 bit in Bit Varstore");
+                                                              }
+                                                            } else {
+                                                              _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
+                                                              if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
+                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid doesn't support array");
+                                                              } else if ((gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId) == EFI_VFR_VARSTORE_BUFFER) &&
+                                                                        (_GET_CURRQEST_VARSIZE() != sizeof (BOOLEAN))) {
+                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid only support BOOLEAN data type");
+                                                              }
                                                             }
                                                           }
                                                        >>
   {
-    F:FLAGS "=" vfrCheckBoxFlags[CBObj, F->getLine()] ","
+    F:FLAGS "=" vfrCheckBoxFlags[*CBObj, F->getLine()] ","
                                                        <<
                                                          if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
                                                             _PCATCH(gCVfrDataStorage.GetVarStoreName (_GET_CURRQEST_VARTINFO().mVarStoreId, &VarStoreName), VFR_RETURN_SUCCESS, L, "Failed to retrieve varstore name");
                                                             VarStoreGuid = gCVfrDataStorage.GetVarStoreGuid(_GET_CURRQEST_VARTINFO().mVarStoreId);
                                                             Val.b = TRUE;
-                                                            if (CBObj.GetFlags () & 0x01) {
+                                                            if (CBObj->GetFlags () & 0x01) {
                                                               CheckDuplicateDefaultValue (EFI_HII_DEFAULT_CLASS_STANDARD, F);
                                                               _PCATCH(
                                                                 gCVfrDefaultStore.BufferVarStoreAltConfigAdd (
@@ -2222,7 +2350,7 @@ vfrStatementCheckBox :
                                                                 "No standard default storage found"
                                                                 );
                                                             }
-                                                            if (CBObj.GetFlags () & 0x02) {
+                                                            if (CBObj->GetFlags () & 0x02) {
                                                               CheckDuplicateDefaultValue (EFI_HII_DEFAULT_CLASS_MANUFACTURING, F);
                                                               _PCATCH(
                                                                 gCVfrDefaultStore.BufferVarStoreAltConfigAdd (
@@ -2242,10 +2370,17 @@ vfrStatementCheckBox :
                                                         >>
   }
   {
-    Key "=" KN:Number  ","                             << AssignQuestionKey (CBObj, KN); >>
+    Key "=" KN:Number  ","                             << AssignQuestionKey (*CBObj, KN); >>
   }
   vfrStatementQuestionOptionList
-  E:EndCheckBox                                        << CRT_END_OP (E); >>
+  E:EndCheckBox                                        << CRT_END_OP (E);
+                                                          if (GuidObj != NULL) {
+                                                            GuidObj->SetScope(1);
+                                                            CRT_END_OP (E);
+                                                            delete GuidObj;
+                                                          }
+                                                          if (CBObj != NULL) delete CBObj;
+                                                       >>
   ";"
   ;
 
@@ -2441,11 +2576,17 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
      UINT8  MaxU1 = 0, MinU1 = 0, StepU1 = 0;
      BOOLEAN IntDecStyle = FALSE;
      CIfrNumeric *NObj = (CIfrNumeric *) (&MMSDObj);
-     if ((NObj->GetOpCode() == EFI_IFR_NUMERIC_OP) && ((NObj->GetNumericFlags() & EFI_IFR_DISPLAY) == 0)) {
-       IntDecStyle = TRUE;
-     }
      BOOLEAN MinNegative = FALSE;
      BOOLEAN MaxNegative = FALSE;
+     if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+       if ((NObj->GetOpCode() == EFI_IFR_NUMERIC_OP) && ((NObj->GetNumericFlags() & EFI_IFR_DISPLAY_BIT) == 0)) {
+         IntDecStyle = TRUE;
+       }
+     } else {
+       if ((NObj->GetOpCode() == EFI_IFR_NUMERIC_OP) && ((NObj->GetNumericFlags() & EFI_IFR_DISPLAY) == 0)) {
+         IntDecStyle = TRUE;
+       }
+     }
   >>
   Minimum   "=" 
   {
@@ -2455,75 +2596,79 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           if (!IntDecStyle &&  MinNegative) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "\"-\" can't be used when not in int decimal type. ");
                                                           }
-                                                          switch (_GET_CURRQEST_DATATYPE()) {
-                                                          case EFI_IFR_TYPE_NUM_SIZE_64 :
-                                                            MinU8 = _STOU64(I->getText(), I->getLine());
-                                                            if (IntDecStyle) {
-                                                              if (MinNegative) { 
-                                                                if (MinU8 > 0x8000000000000000) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT64 type minimum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
-                                                                }
-                                                              } else {
-                                                                if (MinU8 > 0x7FFFFFFFFFFFFFFF) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT64 type minimum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
-                                                                }
-                                                              }
-                                                            }
-                                                            if (MinNegative) {
-                                                              MinU8 = ~MinU8 + 1;
-                                                            }
-                                                            break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_32 :
+                                                          if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
                                                             MinU4 = _STOU32(I->getText(), I->getLine());
-                                                            if (IntDecStyle) {
-                                                              if (MinNegative) { 
-                                                                if (MinU4 > 0x80000000) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT32 type minimum can't small than -0x80000000, big than 0x7FFFFFFF");
-                                                                }
-                                                              } else {
-                                                                if (MinU4 > 0x7FFFFFFF) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT32 type minimum can't small than -0x80000000, big than 0x7FFFFFFF");
-                                                                }
-                                                              }
-                                                            }
-                                                            if (MinNegative) {
-                                                              MinU4 = ~MinU4 + 1;
-                                                            }
-                                                            break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_16 :
-                                                            MinU2 = _STOU16(I->getText(), I->getLine());
-                                                            if (IntDecStyle) {
-                                                              if (MinNegative) { 
-                                                                if (MinU2 > 0x8000) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT16 type minimum can't small than -0x8000, big than 0x7FFF");
-                                                                }
-                                                              } else {
-                                                                if (MinU2 > 0x7FFF) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT16 type minimum can't small than -0x8000, big than 0x7FFF");
+                                                          } else {
+                                                            switch (_GET_CURRQEST_DATATYPE()) {
+                                                            case EFI_IFR_TYPE_NUM_SIZE_64 :
+                                                              MinU8 = _STOU64(I->getText(), I->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MinNegative) {
+                                                                  if (MinU8 > 0x8000000000000000) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT64 type minimum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
+                                                                  }
+                                                                } else {
+                                                                  if (MinU8 > 0x7FFFFFFFFFFFFFFF) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT64 type minimum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
+                                                                  }
                                                                 }
                                                               }
-                                                            }
-                                                            if (MinNegative) {
-                                                              MinU2 = ~MinU2 + 1;
-                                                            }
-                                                            break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_8 :
-                                                            MinU1 = _STOU8(I->getText(), I->getLine());
-                                                            if (IntDecStyle) {
-                                                              if (MinNegative) { 
-                                                                if (MinU1 > 0x80) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT8 type minimum can't small than -0x80, big than 0x7F");
-                                                                }
-                                                              } else {
-                                                                if (MinU1 > 0x7F) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT8 type minimum can't small than -0x80, big than 0x7F");
+                                                              if (MinNegative) {
+                                                                MinU8 = ~MinU8 + 1;
+                                                              }
+                                                              break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_32 :
+                                                              MinU4 = _STOU32(I->getText(), I->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MinNegative) {
+                                                                  if (MinU4 > 0x80000000) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT32 type minimum can't small than -0x80000000, big than 0x7FFFFFFF");
+                                                                  }
+                                                                } else {
+                                                                  if (MinU4 > 0x7FFFFFFF) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT32 type minimum can't small than -0x80000000, big than 0x7FFFFFFF");
+                                                                  }
                                                                 }
                                                               }
+                                                              if (MinNegative) {
+                                                                MinU4 = ~MinU4 + 1;
+                                                              }
+                                                              break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_16 :
+                                                              MinU2 = _STOU16(I->getText(), I->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MinNegative) {
+                                                                  if (MinU2 > 0x8000) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT16 type minimum can't small than -0x8000, big than 0x7FFF");
+                                                                  }
+                                                                } else {
+                                                                  if (MinU2 > 0x7FFF) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT16 type minimum can't small than -0x8000, big than 0x7FFF");
+                                                                  }
+                                                                }
+                                                              }
+                                                              if (MinNegative) {
+                                                                MinU2 = ~MinU2 + 1;
+                                                              }
+                                                              break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_8 :
+                                                              MinU1 = _STOU8(I->getText(), I->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MinNegative) {
+                                                                  if (MinU1 > 0x80) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT8 type minimum can't small than -0x80, big than 0x7F");
+                                                                  }
+                                                                } else {
+                                                                  if (MinU1 > 0x7F) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, I->getLine(), "INT8 type minimum can't small than -0x80, big than 0x7F");
+                                                                  }
+                                                                }
+                                                              }
+                                                              if (MinNegative) {
+                                                                MinU1 = ~MinU1 + 1;
+                                                              }
+                                                              break;
                                                             }
-                                                            if (MinNegative) {
-                                                              MinU1 = ~MinU1 + 1;
-                                                            }
-                                                            break;
                                                           }
                                                        >>
   Maximum   "=" 
@@ -2534,178 +2679,230 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           if (!IntDecStyle && MaxNegative) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "\"-\" can't be used when not in int decimal type. ");
                                                           }
-
-                                                          switch (_GET_CURRQEST_DATATYPE()) {
-                                                          case EFI_IFR_TYPE_NUM_SIZE_64 : 
-                                                            MaxU8 = _STOU64(A->getText(), A->getLine()); 
-                                                            if (IntDecStyle) {
-                                                              if (MaxNegative) {
-                                                                if (MaxU8 > 0x8000000000000000) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT64 type maximum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
-                                                                }
-                                                              } else {
-                                                                if (MaxU8 > 0x7FFFFFFFFFFFFFFF) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT64 type maximum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
-                                                                }
-                                                              }
-                                                            }
-                                                            if (MaxNegative) {
-                                                              MaxU8 = ~MaxU8 + 1;
-                                                            }
-                                                            if (IntDecStyle) {
-                                                              if ((INT64) MaxU8 < (INT64) MinU8) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
-                                                              }
-                                                            } else {
-                                                              if (MaxU8 < MinU8) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
-                                                              }
-                                                            }
-                                                            break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_32 : 
+                                                          if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
                                                             MaxU4 = _STOU32(A->getText(), A->getLine());
-                                                            if (IntDecStyle) {
+                                                            if (!IntDecStyle && MaxU4 > pow (2,_GET_CURRQEST_VARTINFO().mVarTotalSize) -1) {
+                                                              _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "BIT type maximum can't bigger than 2^BitWidth -1");
+                                                            }
+                                                          }  else {
+                                                            switch (_GET_CURRQEST_DATATYPE()) {
+                                                            case EFI_IFR_TYPE_NUM_SIZE_64 :
+                                                              MaxU8 = _STOU64(A->getText(), A->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MaxNegative) {
+                                                                  if (MaxU8 > 0x8000000000000000) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT64 type maximum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
+                                                                  }
+                                                                } else {
+                                                                  if (MaxU8 > 0x7FFFFFFFFFFFFFFF) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT64 type maximum can't small than -0x8000000000000000, big than 0x7FFFFFFFFFFFFFFF");
+                                                                  }
+                                                                }
+                                                              }
                                                               if (MaxNegative) {
-                                                                if (MaxU4 > 0x80000000) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT32 type maximum can't small than -0x80000000, big than 0x7FFFFFFF");
+                                                                MaxU8 = ~MaxU8 + 1;
+                                                              }
+                                                              if (IntDecStyle) {
+                                                                if ((INT64) MaxU8 < (INT64) MinU8) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
                                                                 }
                                                               } else {
-                                                                if (MaxU4 > 0x7FFFFFFF) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT32 type maximum can't small than -0x80000000, big than 0x7FFFFFFF");
+                                                                if (MaxU8 < MinU8) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
                                                                 }
                                                               }
-                                                            }
-                                                            if (MaxNegative) {
-                                                              MaxU4 = ~MaxU4 + 1;
-                                                            }
-                                                            if (IntDecStyle) {
-                                                              if ((INT32) MaxU4 < (INT32) MinU4) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
+                                                              break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_32 :
+                                                              MaxU4 = _STOU32(A->getText(), A->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MaxNegative) {
+                                                                  if (MaxU4 > 0x80000000) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT32 type maximum can't small than -0x80000000, big than 0x7FFFFFFF");
+                                                                  }
+                                                                } else {
+                                                                  if (MaxU4 > 0x7FFFFFFF) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT32 type maximum can't small than -0x80000000, big than 0x7FFFFFFF");
+                                                                  }
+                                                                }
                                                               }
-                                                            } else {
-                                                              if (MaxU4 < MinU4) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
-                                                              }
-                                                            }
-                                                            break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_16 : 
-                                                            MaxU2 = _STOU16(A->getText(), A->getLine()); 
-                                                            if (IntDecStyle) {
                                                               if (MaxNegative) {
-                                                                if (MaxU2 > 0x8000) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT16 type maximum can't small than -0x8000, big than 0x7FFF");
+                                                                MaxU4 = ~MaxU4 + 1;
+                                                              }
+                                                              if (IntDecStyle) {
+                                                                if ((INT32) MaxU4 < (INT32) MinU4) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
                                                                 }
                                                               } else {
-                                                                if (MaxU2 > 0x7FFF) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT16 type maximum can't small than -0x8000, big than 0x7FFF");
+                                                                if (MaxU4 < MinU4) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
                                                                 }
                                                               }
-                                                            }
-                                                            if (MaxNegative) {
-                                                              MaxU2 = ~MaxU2 + 1;
-                                                            }
-                                                            if (IntDecStyle) {
-                                                              if ((INT16) MaxU2 < (INT16) MinU2) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
+                                                              break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_16 :
+                                                              MaxU2 = _STOU16(A->getText(), A->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MaxNegative) {
+                                                                  if (MaxU2 > 0x8000) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT16 type maximum can't small than -0x8000, big than 0x7FFF");
+                                                                  }
+                                                                } else {
+                                                                  if (MaxU2 > 0x7FFF) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT16 type maximum can't small than -0x8000, big than 0x7FFF");
+                                                                  }
+                                                                }
                                                               }
-                                                            } else {
-                                                              if (MaxU2 < MinU2) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
-                                                              }
-                                                            }
-                                                            break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_8 :  
-                                                            MaxU1 = _STOU8(A->getText(), A->getLine());
-                                                            if (IntDecStyle) {
                                                               if (MaxNegative) {
-                                                                if (MaxU1 > 0x80) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT8 type maximum can't small than -0x80, big than 0x7F");
+                                                                MaxU2 = ~MaxU2 + 1;
+                                                              }
+                                                              if (IntDecStyle) {
+                                                                if ((INT16) MaxU2 < (INT16) MinU2) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
                                                                 }
                                                               } else {
-                                                                if (MaxU1 > 0x7F) {
-                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT8 type maximum can't small than -0x80, big than 0x7F");
+                                                                if (MaxU2 < MinU2) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
                                                                 }
                                                               }
-                                                            }
-                                                            if (MaxNegative) {
-                                                              MaxU1 = ~MaxU1 + 1;
-                                                            }
-                                                            if (IntDecStyle) {
-                                                              if ((INT8) MaxU1 < (INT8) MinU1) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
+                                                              break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_8 :
+                                                              MaxU1 = _STOU8(A->getText(), A->getLine());
+                                                              if (IntDecStyle) {
+                                                                if (MaxNegative) {
+                                                                  if (MaxU1 > 0x80) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT8 type maximum can't small than -0x80, big than 0x7F");
+                                                                  }
+                                                                } else {
+                                                                  if (MaxU1 > 0x7F) {
+                                                                    _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "INT8 type maximum can't small than -0x80, big than 0x7F");
+                                                                  }
+                                                                }
                                                               }
-                                                            } else {
-                                                              if (MaxU1 < MinU1) {
-                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
+                                                              if (MaxNegative) {
+                                                                MaxU1 = ~MaxU1 + 1;
                                                               }
+                                                              if (IntDecStyle) {
+                                                                if ((INT8) MaxU1 < (INT8) MinU1) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
+                                                                }
+                                                              } else {
+                                                                if (MaxU1 < MinU1) {
+                                                                  _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "Maximum can't be less than Minimum");
+                                                                }
+                                                              }
+                                                              break;
                                                             }
-                                                            break;
                                                           }
                                                        >>
   {
     STEP    "=" S:Number ","
                                                        <<
-                                                          switch (_GET_CURRQEST_DATATYPE()) {
-                                                          case EFI_IFR_TYPE_NUM_SIZE_64 : StepU8 = _STOU64(S->getText(), S->getLine()); break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_32 : StepU4 = _STOU32(S->getText(), S->getLine()); break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_16 : StepU2 = _STOU16(S->getText(), S->getLine()); break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_8 :  StepU1 = _STOU8(S->getText(), S->getLine());  break;
+                                                          if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            StepU4 = _STOU32(S->getText(), S->getLine());
+                                                          } else {
+                                                            switch (_GET_CURRQEST_DATATYPE()) {
+                                                            case EFI_IFR_TYPE_NUM_SIZE_64 : StepU8 = _STOU64(S->getText(), S->getLine()); break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_32 : StepU4 = _STOU32(S->getText(), S->getLine()); break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_16 : StepU2 = _STOU16(S->getText(), S->getLine()); break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_8 :  StepU1 = _STOU8(S->getText(), S->getLine());  break;
+                                                            }
                                                           }
                                                        >>
   }
                                                        <<
-                                                          switch (_GET_CURRQEST_DATATYPE()) {
-                                                          case EFI_IFR_TYPE_NUM_SIZE_64 : $MMSDObj.SetMinMaxStepData (MinU8, MaxU8, StepU8); break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_32 : $MMSDObj.SetMinMaxStepData (MinU4, MaxU4, StepU4); break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_16 : $MMSDObj.SetMinMaxStepData (MinU2, MaxU2, StepU2); break;
-                                                          case EFI_IFR_TYPE_NUM_SIZE_8 :  $MMSDObj.SetMinMaxStepData (MinU1, MaxU1, StepU1);  break;
+                                                         if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $MMSDObj.SetMinMaxStepData (MinU4, MaxU4, StepU4);
+                                                          } else {
+                                                            switch (_GET_CURRQEST_DATATYPE()) {
+                                                            case EFI_IFR_TYPE_NUM_SIZE_64 : $MMSDObj.SetMinMaxStepData (MinU8, MaxU8, StepU8); break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_32 : $MMSDObj.SetMinMaxStepData (MinU4, MaxU4, StepU4); break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_16 : $MMSDObj.SetMinMaxStepData (MinU2, MaxU2, StepU2); break;
+                                                            case EFI_IFR_TYPE_NUM_SIZE_8 :  $MMSDObj.SetMinMaxStepData (MinU1, MaxU1, StepU1);  break;
+                                                            }
                                                           }
                                                        >>
   ;
 
 vfrStatementNumeric :
   <<
-     CIfrNumeric NObj;
+     CIfrNumeric *NObj = NULL;
      UINT32      DataTypeSize;
      BOOLEAN     IsSupported = TRUE;
      UINT8       ShrinkSize  = 0;
+     CIfrGuid    *GuidObj = NULL;
+     UINT8       LFlags = _GET_CURRQEST_DATATYPE() & EFI_IFR_NUMERIC_SIZE;
+     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
+     EFI_VARSTORE_INFO Info;
+     Info.mVarType               = EFI_IFR_TYPE_OTHER;
+     Info.mVarTotalSize          = 0;
+     Info.mInfo.mVarOffset       = EFI_VAROFFSET_INVALID;
+     Info.mVarStoreId            = EFI_VARSTORE_ID_INVALID;
+     Info.mIsBitVar              = FALSE;
   >>
-  L:Numeric                                            << NObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeader[NObj] ","                          << // check data type
+  L:Numeric                                            <<  >>
+  vfrQuestionBaseInfo[Info, QId]                       <<
+                                                         if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                           GuidObj = new CIfrGuid(0);
+                                                           GuidObj->SetGuid (&gBitVarstoreGuid);
+                                                           GuidObj->SetLineNo(L->getLine());
+                                                         }
+                                                         NObj = new CIfrNumeric;
+                                                         NObj->SetLineNo(L->getLine());
+                                                         NObj->SetQuestionId (QId);
+                                                         NObj->SetVarStoreInfo (&Info);
+                                                        >>
+  vfrStatementHeader[NObj]","
+                                                         <<
+                                                          // check data type
                                                           if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
-                                                            _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "Numeric varid is not the valid data type");
-                                                            if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
-                                                              _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "Numeric varid doesn't support array");
+                                                            if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                               LFlags = (EFI_IFR_NUMERIC_SIZE_BIT & (_GET_CURRQEST_VARSIZE()));
+                                                              _PCATCH(NObj->SetFlagsForBitField (NObj->FLAGS(), LFlags), L->getLine());
+                                                            } else {
+                                                              _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "Numeric varid is not the valid data type");
+                                                              if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
+                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "Numeric varid doesn't support array");
+                                                              }
+                                                              _PCATCH(NObj->SetFlags (NObj->FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine());
                                                             }
-                                                            _PCATCH(NObj.SetFlags (NObj.FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine());
                                                           }
                                                        >>
-  { F:FLAGS "=" vfrNumericFlags[NObj, F->getLine()] "," }
+  { F:FLAGS "=" vfrNumericFlags[*NObj, F->getLine()] "," }
   {
-    Key   "=" KN:Number ","                            << AssignQuestionKey (NObj, KN); >>
+    Key   "=" KN:Number ","                            << AssignQuestionKey (*NObj, KN); >>
   }
-  vfrSetMinMaxStep[NObj]                               <<
-                                                          switch (_GET_CURRQEST_DATATYPE()) {
-                                                            //
-                                                            // Base on the type to know the actual used size,shrink the buffer 
-                                                            // size allocate before.
-                                                            //
-                                                            case EFI_IFR_TYPE_NUM_SIZE_8: ShrinkSize = 21;break;
-                                                            case EFI_IFR_TYPE_NUM_SIZE_16:ShrinkSize = 18;break;
-                                                            case EFI_IFR_TYPE_NUM_SIZE_32:ShrinkSize = 12;break;
-                                                            case EFI_IFR_TYPE_NUM_SIZE_64:break;
-                                                            default: 
-                                                              IsSupported = FALSE;
-                                                              break;
+  vfrSetMinMaxStep[*NObj]                               <<
+                                                          if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            switch (_GET_CURRQEST_DATATYPE()) {
+                                                              //
+                                                              // Base on the type to know the actual used size,shrink the buffer
+                                                              // size allocate before.
+                                                              //
+                                                              case EFI_IFR_TYPE_NUM_SIZE_8: ShrinkSize = 21;break;
+                                                              case EFI_IFR_TYPE_NUM_SIZE_16:ShrinkSize = 18;break;
+                                                              case EFI_IFR_TYPE_NUM_SIZE_32:ShrinkSize = 12;break;
+                                                              case EFI_IFR_TYPE_NUM_SIZE_64:break;
+                                                              default:
+                                                                IsSupported = FALSE;
+                                                                break;
+                                                            }
+                                                          } else {
+                                                            ShrinkSize = 0;
                                                           }
-                                                          NObj.ShrinkBinSize (ShrinkSize);
+                                                          NObj->ShrinkBinSize (ShrinkSize);
+
                                                           if (!IsSupported) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "Numeric question only support UINT8, UINT16, UINT32 and UINT64 data type.");
                                                           }
                                                        >>
   vfrStatementQuestionOptionList
   E:EndNumeric                                         << 
-                                                          CRT_END_OP (E); 
+                                                          CRT_END_OP (E);
+                                                          if (GuidObj != NULL) {
+                                                            GuidObj->SetScope(1);
+                                                            CRT_END_OP (E);
+                                                            delete GuidObj;
+                                                          }
+                                                          if (NObj != NULL) delete NObj;
                                                        >>
   ";"
   ;
@@ -2714,67 +2911,136 @@ vfrNumericFlags [CIfrNumeric & NObj, UINT32 LineNum] :
   <<
      UINT8 LFlags = _GET_CURRQEST_DATATYPE() & EFI_IFR_NUMERIC_SIZE;
      UINT8 HFlags = 0;
-     EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
      BOOLEAN IsSetType = FALSE;
      BOOLEAN IsDisplaySpecified = FALSE;
+     EFI_VFR_VARSTORE_TYPE VarStoreType = gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId);
   >>
-  numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified ] )*
+  numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified, LineNum] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified, LineNum] )*
                                                        <<
                                                           //check data type flag
-                                                          if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
-                                                            VarStoreType = gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId);
-                                                            if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_EFI) {
-                                                              if (_GET_CURRQEST_DATATYPE() != (LFlags & EFI_IFR_NUMERIC_SIZE)) {
-                                                                _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Numeric Flag is not same to Numeric VarData type");
+                                                          if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
+                                                              if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_EFI) {
+                                                                if (_GET_CURRQEST_DATATYPE() != (LFlags & EFI_IFR_NUMERIC_SIZE)) {
+                                                                  _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Numeric Flag is not same to Numeric VarData type");
+                                                                }
+                                                              } else {
+                                                                // update data type for name/value store
+                                                                UINT32 DataTypeSize;
+                                                                _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
+                                                                gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize);
+                                                                _GET_CURRQEST_VARTINFO().mVarTotalSize = DataTypeSize;
                                                               }
-                                                            } else {
-                                                              // update data type for name/value store
-                                                              UINT32 DataTypeSize;
+                                                            } else if (IsSetType){
                                                               _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
-                                                              gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize);
-                                                              _GET_CURRQEST_VARTINFO().mVarTotalSize = DataTypeSize;
                                                             }
-                                                          } else if (IsSetType){
-                                                            _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
+                                                            _PCATCH(NObj.SetFlags (HFlags, LFlags, IsDisplaySpecified), LineNum);
+                                                          } else if ((_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) && (_GET_CURRQEST_VARTINFO().mIsBitVar)) {
+                                                            LFlags |= (EFI_IFR_NUMERIC_SIZE_BIT & (_GET_CURRQEST_VARSIZE()));
+                                                            _PCATCH(NObj.SetFlagsForBitField (HFlags, LFlags, IsDisplaySpecified), LineNum);
                                                           }
-                                                          _PCATCH(NObj.SetFlags (HFlags, LFlags, IsDisplaySpecified), LineNum);
                                                        >>
   ;
 
-numericFlagsField [UINT8 & HFlags, UINT8 & LFlags, BOOLEAN & IsSetType, BOOLEAN & IsDisplaySpecified] :
+numericFlagsField [UINT8 & HFlags, UINT8 & LFlags, BOOLEAN & IsSetType, BOOLEAN & IsDisplaySpecified, UINT32 LineNum] :
     N:Number                                           << _PCATCH(_STOU8(N->getText(), N->getLine()) == 0 ? VFR_RETURN_SUCCESS : VFR_RETURN_UNSUPPORTED, N->getLine()); >>
-  | "NUMERIC_SIZE_1"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_1; IsSetType = TRUE;>>
-  | "NUMERIC_SIZE_2"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_2; IsSetType = TRUE;>>
-  | "NUMERIC_SIZE_4"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_4; IsSetType = TRUE;>>
-  | "NUMERIC_SIZE_8"                                   << $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_8; IsSetType = TRUE;>>
-  | "DISPLAY_INT_DEC"                                  << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_INT_DEC; IsDisplaySpecified = TRUE;>>
-  | "DISPLAY_UINT_DEC"                                 << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_DEC; IsDisplaySpecified = TRUE;>>
-  | "DISPLAY_UINT_HEX"                                 << $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_HEX; IsDisplaySpecified = TRUE;>>
+  | "NUMERIC_SIZE_1"                                   << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_1;IsSetType = TRUE;
+                                                          } else {
+                                                            _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Can not specifie the size of the numeric value for BIT field");
+                                                          }
+                                                       >>
+  | "NUMERIC_SIZE_2"                                   << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_2;IsSetType = TRUE;
+                                                          } else {
+                                                            _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Can not specifie the size of the numeric value for BIT field");
+                                                          }
+                                                       >>
+  | "NUMERIC_SIZE_4"                                   << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_4; IsSetType = TRUE;
+                                                          } else {
+                                                            _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Can not specifie the size of the numeric value for BIT field");
+                                                          }
+                                                       >>
+  | "NUMERIC_SIZE_8"                                   << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_NUMERIC_SIZE) | EFI_IFR_NUMERIC_SIZE_8; IsSetType = TRUE;
+                                                          } else {
+                                                            _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Can not specifie the size of the numeric value for BIT field");
+                                                          }
+                                                       >>
+  | "DISPLAY_INT_DEC"                                  << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_INT_DEC;
+                                                          } else {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_DISPLAY_BIT) | EFI_IFR_DISPLAY_INT_DEC_BIT;
+                                                          }
+                                                          IsDisplaySpecified = TRUE;
+                                                       >>
+  | "DISPLAY_UINT_DEC"                                 << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_DEC;
+                                                          } else {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_DISPLAY_BIT) | EFI_IFR_DISPLAY_UINT_DEC_BIT;
+                                                          }
+                                                          IsDisplaySpecified = TRUE;
+                                                       >>
+  | "DISPLAY_UINT_HEX"                                 << if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_DISPLAY) | EFI_IFR_DISPLAY_UINT_HEX;
+                                                          } else {
+                                                            $LFlags = ($LFlags & ~EFI_IFR_DISPLAY_BIT) | EFI_IFR_DISPLAY_UINT_HEX_BIT;
+                                                          }
+                                                          IsDisplaySpecified = TRUE;
+                                                       >>
   | questionheaderFlagsField[HFlags]
   ;
 
 vfrStatementOneOf :
   <<
-     CIfrOneOf OObj;
+     CIfrOneOf *OObj = NULL;
      UINT32    DataTypeSize;
      BOOLEAN   IsSupported = TRUE;
      UINT8     ShrinkSize  = 0;
+     CIfrGuid  *GuidObj = NULL;
+     UINT8 LFlags = _GET_CURRQEST_DATATYPE() & EFI_IFR_NUMERIC_SIZE;
+     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;;
+     EFI_VARSTORE_INFO Info;
+     Info.mVarType               = EFI_IFR_TYPE_OTHER;
+     Info.mVarTotalSize          = 0;
+     Info.mInfo.mVarOffset       = EFI_VAROFFSET_INVALID;
+     Info.mVarStoreId            = EFI_VARSTORE_ID_INVALID;
+     Info.mIsBitVar              = FALSE;
   >>
-  L:OneOf                                              << OObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeader[OObj] ","                          << //check data type
+  L:OneOf
+  vfrQuestionBaseInfo[Info, QId]                       <<
+                                                         if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                           GuidObj = new CIfrGuid(0);
+                                                           GuidObj->SetGuid (&gBitVarstoreGuid);
+                                                           GuidObj->SetLineNo(L->getLine());
+                                                         }
+                                                         OObj = new CIfrOneOf;
+                                                         OObj->SetLineNo(L->getLine());
+                                                         OObj->SetQuestionId (QId);
+                                                         OObj->SetVarStoreInfo (&Info);
+                                                        >>
+  vfrStatementHeader[OObj]","
+                                                        << //check data type
                                                           if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
-                                                            _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "OneOf varid is not the valid data type");
-                                                            if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
-                                                              _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "OneOf varid doesn't support array");
+                                                            if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                               LFlags = (EFI_IFR_NUMERIC_SIZE_BIT & (_GET_CURRQEST_VARSIZE()));
+                                                              _PCATCH(OObj->SetFlagsForBitField (OObj->FLAGS(), LFlags), L->getLine());
+                                                            } else {
+                                                              _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "OneOf varid is not the valid data type");
+                                                              if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
+                                                                _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "OneOf varid doesn't support array");
+                                                              }
+                                                              _PCATCH(OObj->SetFlags (OObj->FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine());
                                                             }
-                                                            _PCATCH(OObj.SetFlags (OObj.FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine());
                                                           }
                                                        >>
-  { F:FLAGS "=" vfrOneofFlagsField[OObj, F->getLine()] "," }
+  { F:FLAGS "=" vfrOneofFlagsField[*OObj, F->getLine()] "," }
   {
-    vfrSetMinMaxStep[OObj]
+    vfrSetMinMaxStep[*OObj]
   }
                                                        <<
+                                                          if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
                                                           switch (_GET_CURRQEST_DATATYPE()) {
                                                             //
                                                             // Base on the type to know the actual used size,shrink the buffer 
@@ -2788,14 +3054,24 @@ vfrStatementOneOf :
                                                               IsSupported = FALSE;
                                                               break;
                                                           }
-                                                          OObj.ShrinkBinSize (ShrinkSize);
+                                                         } else {
+                                                         ShrinkSize = 0;
+                                                         }
+                                                          OObj->ShrinkBinSize (ShrinkSize);
+
                                                           if (!IsSupported) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "OneOf question only support UINT8, UINT16, UINT32 and UINT64 data type.");
                                                           }
                                                        >>
   vfrStatementQuestionOptionList
   E:EndOneOf                                           <<
-                                                          CRT_END_OP (E); 
+                                                          CRT_END_OP (E);
+                                                        if (GuidObj != NULL) {
+                                                            GuidObj->SetScope(1);
+                                                            CRT_END_OP (E);
+                                                            delete GuidObj;
+                                                          }
+                                                          if (OObj != NULL) delete OObj;
                                                        >>
   ";"
   ;
@@ -2804,30 +3080,33 @@ vfrOneofFlagsField [CIfrOneOf & OObj, UINT32 LineNum] :
   <<
      UINT8 LFlags = _GET_CURRQEST_DATATYPE() & EFI_IFR_NUMERIC_SIZE;
      UINT8 HFlags = 0;
-     EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
      BOOLEAN IsSetType = FALSE;
      BOOLEAN IsDisplaySpecified = FALSE;
+     EFI_VFR_VARSTORE_TYPE VarStoreType = gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId);
   >>
-  numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified] )*
+  numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified, LineNum] ( "\|" numericFlagsField[HFlags, LFlags, IsSetType, IsDisplaySpecified, LineNum] )*
                                                        <<
                                                           //check data type flag
-                                                          if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
-                                                            VarStoreType = gCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId);
-                                                            if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_EFI) {
-                                                              if (_GET_CURRQEST_DATATYPE() != (LFlags & EFI_IFR_NUMERIC_SIZE)) {
-                                                                _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Numeric Flag is not same to Numeric VarData type");
+                                                          if (!_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                            if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
+                                                              if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_EFI) {
+                                                                if (_GET_CURRQEST_DATATYPE() != (LFlags & EFI_IFR_NUMERIC_SIZE)) {
+                                                                 _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Numeric Flag is not same to Numeric VarData type");
+                                                                }
+                                                              } else {
+                                                                // update data type for Name/Value store
+                                                                UINT32 DataTypeSize;
+                                                                _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
+                                                                gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize);
+                                                                _GET_CURRQEST_VARTINFO().mVarTotalSize = DataTypeSize;
                                                               }
-                                                            } else {
-                                                              // update data type for Name/Value store
-                                                              UINT32 DataTypeSize;
+                                                            } else if (IsSetType){
                                                               _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
-                                                              gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize);
-                                                              _GET_CURRQEST_VARTINFO().mVarTotalSize = DataTypeSize;
                                                             }
-                                                          } else if (IsSetType){
-                                                            _GET_CURRQEST_VARTINFO().mVarType = LFlags & EFI_IFR_NUMERIC_SIZE;
+                                                            _PCATCH(OObj.SetFlags (HFlags, LFlags), LineNum);
+                                                          } else if (_GET_CURRQEST_VARTINFO().mVarStoreId != EFI_VARSTORE_ID_INVALID) {
+                                                            _PCATCH(OObj.SetFlagsForBitField (HFlags, LFlags), LineNum);
                                                           }
-                                                          _PCATCH(OObj.SetFlags (HFlags, LFlags), LineNum);
                                                        >>
   ;
 
@@ -3382,21 +3661,25 @@ vfrStatementOneOfOption :
                                                           if (gCurrentMinMaxData != NULL) {
                                                             //set min/max value for oneof opcode
                                                             UINT64 Step = gCurrentMinMaxData->GetStepData(_GET_CURRQEST_DATATYPE());
-                                                            switch (_GET_CURRQEST_DATATYPE()) {
-                                                            case EFI_IFR_TYPE_NUM_SIZE_64:
-                                                              gCurrentMinMaxData->SetMinMaxStepData(Val->u64, Val->u64, Step);
-                                                              break;
-                                                            case EFI_IFR_TYPE_NUM_SIZE_32:
+                                                            if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
                                                               gCurrentMinMaxData->SetMinMaxStepData(Val->u32, Val->u32, (UINT32) Step);
-                                                              break;
-                                                            case EFI_IFR_TYPE_NUM_SIZE_16:
-                                                              gCurrentMinMaxData->SetMinMaxStepData(Val->u16, Val->u16, (UINT16) Step);
-                                                              break;
-                                                            case EFI_IFR_TYPE_NUM_SIZE_8:
-                                                              gCurrentMinMaxData->SetMinMaxStepData(Val->u8, Val->u8, (UINT8) Step);
-                                                              break;
-                                                            default:
-                                                              break;
+                                                            } else {
+                                                              switch (_GET_CURRQEST_DATATYPE()) {
+                                                              case EFI_IFR_TYPE_NUM_SIZE_64:
+                                                                gCurrentMinMaxData->SetMinMaxStepData(Val->u64, Val->u64, Step);
+                                                                break;
+                                                              case EFI_IFR_TYPE_NUM_SIZE_32:
+                                                                gCurrentMinMaxData->SetMinMaxStepData(Val->u32, Val->u32, (UINT32) Step);
+                                                                break;
+                                                              case EFI_IFR_TYPE_NUM_SIZE_16:
+                                                                gCurrentMinMaxData->SetMinMaxStepData(Val->u16, Val->u16, (UINT16) Step);
+                                                                break;
+                                                              case EFI_IFR_TYPE_NUM_SIZE_8:
+                                                                gCurrentMinMaxData->SetMinMaxStepData(Val->u8, Val->u8, (UINT8) Step);
+                                                                break;
+                                                              default:
+                                                                break;
+                                                              }
                                                             }
                                                           }
                                                           if (_GET_CURRQEST_DATATYPE() == EFI_IFR_TYPE_OTHER) {
@@ -3430,7 +3713,11 @@ vfrStatementOneOfOption :
     	                                                        break;
                                                             }
                                                           } else {
-                                                            ReturnCode = gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &Size);
+                                                            if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                              Size = sizeof (UINT32);
+                                                            } else {
+                                                              ReturnCode = gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &Size);
+                                                            }
                                                           }
                                                           if (ReturnCode != VFR_RETURN_SUCCESS) {
                                                             _PCATCH (ReturnCode, L->getLine());
@@ -3443,7 +3730,11 @@ vfrStatementOneOfOption :
                                                           if (ArrayType) {
                                                             OOOObj->SetType (EFI_IFR_TYPE_BUFFER); 
                                                           } else {
+                                                            if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
+                                                               OOOObj->SetType ( EFI_IFR_TYPE_NUM_SIZE_32);
+                                                            } else {
                                                             OOOObj->SetType (_GET_CURRQEST_DATATYPE()); 
+                                                              }
                                                           }
                                                           OOOObj->SetValue (*Val); 
                                                        >>
@@ -5222,7 +5513,8 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
                        &mFormsetGuid,
                        &gCVfrVarDataTypeDB,
                        TypeNameList[Index],
-                       EFI_VARSTORE_ID_INVALID
+                       EFI_VARSTORE_ID_INVALID,
+                       FALSE
                        );
     gCVfrDataStorage.GetVarStoreId(TypeNameList[Index], &VarStoreId, &mFormsetGuid);
     VSObj.SetVarStoreId (VarStoreId);
@@ -5247,7 +5539,8 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
                        &mFormsetGuid,
                        &gCVfrVarDataTypeDB,
                        (CHAR8 *) DateType,
-                       EFI_VARSTORE_ID_INVALID
+                       EFI_VARSTORE_ID_INVALID,
+                       FALSE
                        );
     gCVfrDataStorage.GetVarStoreId((CHAR8 *) DateName, &VarStoreId, &mFormsetGuid);
     VSObj.SetVarStoreId (VarStoreId);
@@ -5268,7 +5561,8 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
                        &mFormsetGuid,
                        &gCVfrVarDataTypeDB,
                        (CHAR8 *) TimeType,
-                       EFI_VARSTORE_ID_INVALID
+                       EFI_VARSTORE_ID_INVALID,
+                       FALSE
                        );
     gCVfrDataStorage.GetVarStoreId((CHAR8 *) TimeName, &VarStoreId, &mFormsetGuid);
     VSObj.SetVarStoreId (VarStoreId);
