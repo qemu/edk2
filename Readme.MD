@@ -28,6 +28,8 @@ https://bugzilla.tianocore.org/show_bug.cgi?id=546 [PCD] Pcd Database size optim
 
 https://bugzilla.tianocore.org/show_bug.cgi?id=603 [BaseTools] VfrCompiler supports UNION type as VarStore in VFR 
 
+https://bugzilla.tianocore.org/show_bug.cgi?id=611 Collect DynamicHii PCD value as the default setting for EFI Variable and HII VarStore
+
 ## Timeline
 Target for 2017
 
