@@ -1,7 +1,7 @@
 /** @file
 Private MACRO, structure and function definitions for Setup Browser module.
 
-Copyright (c) 2007 - 2016, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2007 - 2017, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -329,7 +329,10 @@ struct _FORM_BROWSER_STATEMENT{
   BROWSER_STORAGE       *Storage;
   VAR_STORE_INFO        VarStoreInfo;
   UINT16                StorageWidth;
+  UINT16                StorageBitWidth;
+  UINT16                VarBitOffset;
   UINT8                 QuestionFlags;
+  BOOLEAN               QuestionReferToBitFields;
   CHAR16                *VariableName;    // Name/Value or EFI Variable name
   CHAR16                *BlockName;       // Buffer storage block name: "OFFSET=...WIDTH=..."
 

@@ -1394,6 +1394,12 @@ BufferToValue (
   BOOLEAN                      IsString;
   UINTN                        Length;
   EFI_STATUS                   Status;
+  UINT8                        *Buffer;
+  UINT32                        Mask;
+  UINT32                        PreBits;
+  UINT32                        BufferValue;
+
+  Buffer = NULL;
 
   IsString = (BOOLEAN) ((Question->HiiValue.Type == EFI_IFR_TYPE_STRING) ?  TRUE : FALSE);
   if (Question->Storage->Type == EFI_HII_VARSTORE_BUFFER || 
@@ -1415,7 +1421,13 @@ BufferToValue (
     //
     // Other type of Questions
     //
-    Dst = (UINT8 *) &Question->HiiValue.Value;
+    if (Question->QuestionReferToBitFields) {
+      Buffer = (UINT8 *)AllocateZeroPool (Question->StorageWidth);
+      ASSERT (Buffer != NULL);
+      Dst = Buffer;
+    } else {
+      Dst = (UINT8 *) &Question->HiiValue.Value;
+    }
   }
 
   //
@@ -1473,6 +1485,23 @@ BufferToValue (
 
   *StringPtr = TempChar;
 
+  if (Question->QuestionReferToBitFields) {
+    PreBits = Question->VarBitOffset - Question->VarStoreInfo.VarOffset * 8;
+    Mask = (1 << Question->StorageBitWidth) - 1;
+    BufferValue = *(Buffer);
+    BufferValue |= *(Buffer + 1) << 8;
+    BufferValue |= *(Buffer + 2) << 16;
+    BufferValue |= *(Buffer + 3) << 24;
+    BufferValue >>= PreBits;
+    BufferValue &= Mask;
+
+    CopyMem ((UINT8 *) &Question->HiiValue.Value, (UINT8*)&BufferValue, Question->StorageWidth);
+
+    if (Buffer != NULL) {
+      FreePool (Buffer);
+    }
+  }
+
   return Status;
 }
 
@@ -1511,6 +1540,9 @@ GetQuestionValue (
   UINTN               Length;
   BOOLEAN             IsBufferStorage;
   UINTN               MaxLen;
+  UINT32              PreBits;
+  UINT32              Mask;
+  UINT32              BufferValue;
 
   Status = EFI_SUCCESS;
   Value  = NULL;
@@ -1678,12 +1710,36 @@ GetQuestionValue (
         //
         // Copy from storage Edit buffer
         //
-        CopyMem (Dst, Storage->EditBuffer + Question->VarStoreInfo.VarOffset, StorageWidth);
+         if (Question->QuestionReferToBitFields) {
+          PreBits = Question->VarBitOffset - Question->VarStoreInfo.VarOffset * 8;
+          Mask = (1<< Question->StorageBitWidth) -1;
+          BufferValue = *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset);
+          BufferValue |= *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 1) << 8;
+          BufferValue |= *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 2) << 16;
+          BufferValue |= *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 3) << 24;
+          BufferValue >>= PreBits;
+          BufferValue &= Mask;
+          CopyMem (Dst, (UINT8*)&BufferValue, StorageWidth);
+        } else {
+          CopyMem (Dst, Storage->EditBuffer + Question->VarStoreInfo.VarOffset, StorageWidth);
+        }
       } else {
         //
         // Copy from storage Edit buffer
         //
-        CopyMem (Dst, Storage->Buffer + Question->VarStoreInfo.VarOffset, StorageWidth);
+        if (Question->QuestionReferToBitFields) {
+          PreBits = Question->VarBitOffset - Question->VarStoreInfo.VarOffset * 8;
+          Mask = (1<< Question->StorageBitWidth) -1;
+          BufferValue = *(Storage->Buffer + Question->VarStoreInfo.VarOffset);
+          BufferValue |= *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 1) << 8;
+          BufferValue |= *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 2) << 16;
+          BufferValue |= *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 3) << 24;
+          BufferValue >>= PreBits;
+          BufferValue &= Mask;
+          CopyMem (Dst, (UINT8*)&BufferValue, StorageWidth);
+        } else {
+          CopyMem (Dst, Storage->Buffer + Question->VarStoreInfo.VarOffset, StorageWidth);
+        }
       }
     } else {
       Value = NULL;
@@ -1827,6 +1883,10 @@ SetQuestionValue (
   UINTN               Index;
   NAME_VALUE_NODE     *Node;
   UINTN               MaxLen;
+  UINT32              PreBits;
+  UINT32              Mask;
+  UINT32              Buffer;
+  UINT32              SrcValue;
 
   Status = EFI_SUCCESS;
   Node   = NULL;
@@ -1949,13 +2009,49 @@ SetQuestionValue (
       if (SetValueTo == GetSetValueWithEditBuffer) {
         //
         // Copy to storage edit buffer
-        //      
-        CopyMem (Storage->EditBuffer + Question->VarStoreInfo.VarOffset, Src, StorageWidth);
+        //
+        if (Question->QuestionReferToBitFields) {
+          PreBits = Question->VarBitOffset - Question->VarStoreInfo.VarOffset * 8;
+          SrcValue = (UINT32)(*Src);
+          SrcValue <<= PreBits;
+          Mask = (1<< Question->StorageBitWidth) -1;
+          Mask <<= PreBits;
+          Buffer = *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset);
+          Buffer |= *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 1) << 8;
+          Buffer |= *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 2) << 16;
+          Buffer |= *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 3) << 24;
+
+          Buffer = (Buffer & (~Mask)) | SrcValue;
+          *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset) = (UINT8) Buffer & 0xFF;
+          *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 1) = (UINT8) (Buffer >> 8);
+          *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 2) = (UINT8) (Buffer >> 16);
+          *(Storage->EditBuffer + Question->VarStoreInfo.VarOffset + 3) = (UINT8) (Buffer >> 24);
+        } else {
+          CopyMem (Storage->EditBuffer + Question->VarStoreInfo.VarOffset, Src, StorageWidth);
+        }
       } else if (SetValueTo == GetSetValueWithBuffer) {
         //
         // Copy to storage edit buffer
         //     
-        CopyMem (Storage->Buffer + Question->VarStoreInfo.VarOffset, Src, StorageWidth);
+        if (Question->QuestionReferToBitFields) {
+          PreBits = Question->VarBitOffset - Question->VarStoreInfo.VarOffset * 8;
+          SrcValue = (UINT32)(*Src);
+          SrcValue <<= PreBits;
+          Mask = (1<< Question->StorageBitWidth) -1;
+          Mask <<= PreBits;
+          Buffer = *(Storage->Buffer + Question->VarStoreInfo.VarOffset);
+          Buffer |= *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 1) << 8;
+          Buffer |= *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 2) << 16;
+          Buffer |= *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 3) << 24;
+
+          Buffer = (Buffer & (~Mask)) | SrcValue;
+          *(Storage->Buffer + Question->VarStoreInfo.VarOffset) = (UINT8) Buffer & 0xFF;
+          *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 1) = (UINT8) (Buffer >> 8);
+          *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 2) = (UINT8) (Buffer >> 16);
+          *(Storage->Buffer + Question->VarStoreInfo.VarOffset + 3) = (UINT8) (Buffer >> 24);
+        } else {
+          CopyMem (Storage->Buffer + Question->VarStoreInfo.VarOffset, Src, StorageWidth);
+        }
       }
     } else {
       if (IsString) {
