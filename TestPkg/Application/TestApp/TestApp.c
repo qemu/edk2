@@ -39,11 +39,18 @@ UefiMain (
 {
   TEST    *Test;
   TEST2   *Test2;
+  TEST2   *Test3;
+  TEST2   *Test4;
 
   Test  = (TEST *) PcdGetPtr (Test);
   Test2 = (TEST2 *) PcdGetPtr (Test2);
+  Test3 = (TEST2 *) PcdGetPtr (Test3);
+  Test4 = (TEST2 *) PcdGetPtr (Test4);
+
   Print (L"Test.Array is %s\n", (CHAR16*)Test->Array);
   Print (L"Test2.Guid is %g\n", Test2->Guid);
+  Print (L"Test3.Array is %s\n", (CHAR16*)Test3->Array2);
+  Print (L"Test4.Guid is %g\n", Test4->Guid);
   
   return EFI_SUCCESS;
 }

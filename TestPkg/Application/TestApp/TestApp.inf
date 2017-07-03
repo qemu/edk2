@@ -39,6 +39,13 @@
   UefiLib
   PcdLib
 
+[FixedPcd]
+gEfiStructuredPcdPkgTokenSpaceGuid.Test
+
+[PatchPcd]
+gEfiStructuredPcdPkgTokenSpaceGuid.Test2
+
 [Pcd]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test3
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test4
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test5

@@ -27,6 +27,7 @@
   ## MdeModule package token space guid
   # Include/Guid/MdeModulePkgTokenSpace.h
   gEfiStructuredPcdPkgTokenSpaceGuid       = { 0x11a81069, 0xa6a2, 0x420a, { 0xa0, 0xe, 0x30, 0xc5, 0xb, 0xfb, 0xe8, 0x13 } }
+  gTestHiiVarGuid       = { 0x11a81069, 0xa6a2, 0x420a, { 0xa0, 0xe, 0x30, 0xc5, 0xb, 0xfb, 0xe8, 0x13 } }
 
 [PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
   # @Prompt Test Strucutre
@@ -54,4 +55,40 @@
   gEfiStructuredPcdPkgTokenSpaceGuid.Test2.C|20
   gEfiStructuredPcdPkgTokenSpaceGuid.Test2.Array2[0]|2
   gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray[7]|5
+
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test3|{0xFF, 0xFF}|TEST2|0x00010073 {
+    <HeaderFiles>
+      Guid/Test2.h
+    <Packages>
+      MdePkg/MdePkg.dec
+      TestPkg/TestPkg.dec
+  }
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray[7]|5
+
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test4|{0xFF, 0xFF}|TEST2|0x00010074 {
+    <HeaderFiles>
+      Guid/Test2.h
+    <Packages>
+      MdePkg/MdePkg.dec
+      TestPkg/TestPkg.dec
+  }
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray[7]|5
+
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test5|{0xFF, 0xFF}|TEST2|0x00010075 {
+    <HeaderFiles>
+      Guid/Test2.h
+    <Packages>
+      MdePkg/MdePkg.dec
+      TestPkg/TestPkg.dec
+  }
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray[7]|5
   
