@@ -1140,7 +1140,7 @@ class DscParser(MetaFileParser):
 
         # Validate the datum type of Dynamic Defaul PCD and DynamicEx Default PCD
         ValueList = GetSplitValueList(self._ValueList[2])
-        if len(ValueList) > 1 and ValueList[1] != TAB_VOID \
+        if len(ValueList) > 1 and ValueList[1] in [TAB_UINT8 , TAB_UINT16, TAB_UINT32 , TAB_UINT64] \
                               and self._ItemType in [MODEL_PCD_DYNAMIC_DEFAULT, MODEL_PCD_DYNAMIC_EX_DEFAULT]:
             EdkLogger.error('Parser', FORMAT_INVALID, "The datum type '%s' of PCD is wrong" % ValueList[1],
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex + 1)

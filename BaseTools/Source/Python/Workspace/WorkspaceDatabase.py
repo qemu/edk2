@@ -961,6 +961,7 @@ class DscBuildData(PlatformBuildClassObject):
                                                 False,
                                                 None
                                                 )
+            
         S_pcd_set = {}
         for str_pcd in StrPcdSet:
             str_pcd_obj = Pcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
@@ -976,10 +977,16 @@ class DscBuildData(PlatformBuildClassObject):
         Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
         if Str_Pcd_Values:
             for item in Str_Pcd_Values:
-                str_pcd_obj = Pcds.get((item[2], item[1]))
-                str_pcd_obj.SkuInfoList[item[0]] = SkuInfoClass(SkuIdName=item[0], DefaultValue=item[3])
+                str_pcd_obj = S_pcd_set.get((item[2], item[1]))
+                if str_pcd_obj is None:
+                    raise
+                if item[0] not in str_pcd_obj.SkuInfoList:
+                    str_pcd_obj.SkuInfoList[item[0]] = SkuInfoClass(SkuIdName=item[0], SkuId=self.SkuIds[item[0]], DefaultValue=item[3])
+                else:
+                    str_pcd_obj.SkuInfoList[item[0]].DefaultValue = item[3] 
                 str_pcd_obj.MaxDatumSize = self.GetStructurePcdMaxSize(str_pcd_obj)
                 str_pcd_obj.DefaultValue = item[3]
+                Pcds[(item[2], item[1])] = str_pcd_obj
         return Pcds
     
     def GetStructurePcdMaxSize(self, str_pcd):
@@ -1223,11 +1230,11 @@ class DscBuildData(PlatformBuildClassObject):
         File = open (InputValueFile, 'w')
         File.write(InitByteValue)
         File.close()
-    
+        
         if sys.platform == "win32":
-            StdOut, StdErr = self.ExecuteCommand ('nmake -f %s' % (MakeFileName))
+            StdOut, StdErr = self.ExecuteCommand ('nmake clean & nmake -f %s' % (MakeFileName))
         else:
-            StdOut, StdErr = self.ExecuteCommand ('make -f %s' % (MakeFileName))
+            StdOut, StdErr = self.ExecuteCommand ('make clean & make -f %s' % (MakeFileName))
         Messages = StdOut.split('\r')
         for Message in Messages:
             if " error " in Message:
@@ -1256,16 +1263,10 @@ class DscBuildData(PlatformBuildClassObject):
         FileBuffer = File.readlines()
         File.close()
         
-        print 'Final Value Output:'
         StructurePcdSet = []
         for Pcd in FileBuffer:
             PcdValue = Pcd.split ('|')
             PcdInfo = PcdValue[0].split ('.')
-            print 'SkuName          : ', PcdInfo[0]
-            print 'TokenSpaceGuid   : ', PcdInfo[2]
-            print 'TokenCName        : ', PcdInfo[3]
-            print 'Value            : ', PcdValue[2]
-            
             StructurePcdSet.append((PcdInfo[0], PcdInfo[2], PcdInfo[3], PcdValue[2].strip()))
         return StructurePcdSet
 
@@ -1291,12 +1292,19 @@ class DscBuildData(PlatformBuildClassObject):
         AvailableSkuIdSet = SkuObj.AvailableSkuIdSet.copy()
         
         AvailableSkuIdSet.update({'DEFAULT':0,'COMMON':0})
+        
+        S_PcdSet = []
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             if SkuName not in AvailableSkuIdSet:
                 continue
-            
-            PcdList.append((PcdCName, TokenSpaceGuid, SkuName,Dummy4))
+            if "." in TokenSpaceGuid:
+                S_PcdSet.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4, AnalyzePcdExpression(Setting)[0]))
+            else:
+                PcdList.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
+            
+        StrPcdSet = self.GetStructurePcdInfo(S_PcdSet)
+        
         # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid, SkuName, Dummy4 in PcdList:
             
@@ -1348,7 +1356,29 @@ class DscBuildData(PlatformBuildClassObject):
                 if 'DEFAULT' in pcd.SkuInfoList.keys() and SkuObj.SystemSkuId not in pcd.SkuInfoList.keys():
                     pcd.SkuInfoList[SkuObj.SystemSkuId] = pcd.SkuInfoList['DEFAULT']
                 del(pcd.SkuInfoList['DEFAULT'])
-               
+                
+        S_pcd_set = {}
+        for str_pcd in StrPcdSet:
+            str_pcd_obj = Pcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
+            str_pcd_dec = self._DecPcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
+            if str_pcd_obj and str_pcd_dec:
+                str_pcd_obj_str = StructurePcd()
+                str_pcd_obj_str.copy(str_pcd_dec)
+                str_pcd_obj_str.copy(str_pcd_obj)
+                for str_pcd_data in StrPcdSet[str_pcd]:
+                    if str_pcd_data[2] in ['COMMON', 'DEFAULT', SkuObj.SystemSkuId]:
+                        str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]))
+                S_pcd_set[str_pcd.split(".")[1], str_pcd.split(".")[0]] = str_pcd_obj_str
+        Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
+        if Str_Pcd_Values:
+            for item in Str_Pcd_Values:
+                str_pcd_obj = S_pcd_set.get((item[2], item[1]))
+                if str_pcd_obj is None:
+                    raise
+                str_pcd_obj.SkuInfoList[item[0]].DefaultValue = item[3]  # = SkuInfoClass(SkuIdName=item[0], SkuId=self.SkuIds[item[0]], DefaultValue=item[3])
+                str_pcd_obj.MaxDatumSize = self.GetStructurePcdMaxSize(str_pcd_obj)
+                str_pcd_obj.DefaultValue = item[3]
+                Pcds[(item[2], item[1])] = str_pcd_obj
         return Pcds
 
     def CompareVarAttr(self, Attr1, Attr2):
@@ -1385,11 +1415,18 @@ class DscBuildData(PlatformBuildClassObject):
         AvailableSkuIdSet = SkuObj.AvailableSkuIdSet.copy()
         
         AvailableSkuIdSet.update({'DEFAULT':0,'COMMON':0})
+        S_PcdSet = []
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             if SkuName not in AvailableSkuIdSet:
                 continue
-            PcdSet.add((PcdCName, TokenSpaceGuid, SkuName,Dummy4))
+            if "." in TokenSpaceGuid:
+                S_PcdSet.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4, AnalyzePcdExpression(Setting)[0]))
+            else:
+                PcdSet.add((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
+            
+        StrPcdSet = self.GetStructurePcdInfo(S_PcdSet)
+        
         # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid,SkuName, Dummy4 in PcdSet:
             
@@ -1475,7 +1512,6 @@ class DscBuildData(PlatformBuildClassObject):
                     pcd.SkuInfoList[SkuObj.SystemSkuId] = pcd.SkuInfoList['DEFAULT']
                 del(pcd.SkuInfoList['DEFAULT'])
             
-            
             if pcd.MaxDatumSize.strip(): 
                 MaxSize = int(pcd.MaxDatumSize,0)
             else:
@@ -1492,7 +1528,32 @@ class DscBuildData(PlatformBuildClassObject):
                     if datalen>MaxSize:
                         MaxSize = datalen
                 pcd.MaxDatumSize = str(MaxSize)
+        S_pcd_set = {}
+        for str_pcd in StrPcdSet:
+            str_pcd_obj = Pcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
+            str_pcd_dec = self._DecPcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
+            if str_pcd_obj and str_pcd_dec:
+                str_pcd_obj_str = StructurePcd()
+                str_pcd_obj_str.copy(str_pcd_dec)
+                str_pcd_obj_str.copy(str_pcd_obj)
+                for str_pcd_data in StrPcdSet[str_pcd]:
+                    if str_pcd_data[2] in ['COMMON', 'DEFAULT', SkuObj.SystemSkuId]:
+                        str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]))
+                S_pcd_set[str_pcd.split(".")[1], str_pcd.split(".")[0]] = str_pcd_obj_str
+                
+        Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
+        
+        if Str_Pcd_Values:
+            for item in Str_Pcd_Values:
+                str_pcd_obj = S_pcd_set.get((item[2], item[1]))
+                if str_pcd_obj is None:
+                    continue
+                str_pcd_obj.SkuInfoList[item[0]].DefaultValue = item[3]  # = SkuInfoClass(SkuIdName=item[0], SkuId=self.SkuIds[item[0]], DefaultValue=item[3])
+                str_pcd_obj.MaxDatumSize = self.GetStructurePcdMaxSize(str_pcd_obj)
+                str_pcd_obj.DefaultValue = item[3]
+                Pcds[(item[2], item[1])] = str_pcd_obj
         return Pcds
+
 
     ## Retrieve dynamic VPD PCD settings
     #
@@ -1511,6 +1572,8 @@ class DscBuildData(PlatformBuildClassObject):
         #
         PcdDict = tdict(True, 4)
         PcdList = []
+        S_PcdSet = []
+
         # Find out all possible PCD candidates for self._Arch
         RecordList = self._RawData[Type, self._Arch]
         AvailableSkuIdSet = SkuObj.AvailableSkuIdSet.copy()
@@ -1519,9 +1582,15 @@ class DscBuildData(PlatformBuildClassObject):
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             if SkuName not in AvailableSkuIdSet:
                 continue
-
-            PcdList.append((PcdCName, TokenSpaceGuid,SkuName, Dummy4))
+            
+            if "." in TokenSpaceGuid:
+                S_PcdSet.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4, AnalyzePcdExpression(Setting)[0]))
+            else:
+                PcdList.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
+            
+        StrPcdSet = self.GetStructurePcdInfo(S_PcdSet)
+
         # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid, SkuName,Dummy4 in PcdList:
             Setting = PcdDict[self._Arch, SkuName, PcdCName, TokenSpaceGuid]
@@ -1577,7 +1646,30 @@ class DscBuildData(PlatformBuildClassObject):
                 if 'DEFAULT' in pcd.SkuInfoList.keys() and SkuObj.SystemSkuId not in pcd.SkuInfoList.keys():
                     pcd.SkuInfoList[SkuObj.SystemSkuId] = pcd.SkuInfoList['DEFAULT']
                 del(pcd.SkuInfoList['DEFAULT'])
-            
+                
+        S_pcd_set = {}
+        for str_pcd in StrPcdSet:
+            str_pcd_obj = Pcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
+            str_pcd_dec = self._DecPcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
+            if str_pcd_obj and str_pcd_dec:
+                str_pcd_obj_str = StructurePcd()
+                str_pcd_obj_str.copy(str_pcd_dec)
+                str_pcd_obj_str.copy(str_pcd_obj)
+                for str_pcd_data in StrPcdSet[str_pcd]:
+                    if str_pcd_data[2] in ['COMMON', 'DEFAULT', SkuObj.SystemSkuId]:
+                        str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]))
+                S_pcd_set[str_pcd.split(".")[1], str_pcd.split(".")[0]] = str_pcd_obj_str
+        Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
+        if Str_Pcd_Values:
+            for item in Str_Pcd_Values:
+                str_pcd_obj = S_pcd_set.get((item[2], item[1]))
+                if str_pcd_obj is None:
+                    raise
+                str_pcd_obj.SkuInfoList[item[0]].DefaultValue = item[3]  # = SkuInfoClass(SkuIdName=item[0], SkuId=self.SkuIds[item[0]], DefaultValue=item[3])
+                
+                str_pcd_obj.MaxDatumSize = self.GetStructurePcdMaxSize(str_pcd_obj)
+                str_pcd_obj.DefaultValue = item[3]
+                Pcds[(item[2], item[1])] = str_pcd_obj
         return Pcds
 
     ## Add external modules

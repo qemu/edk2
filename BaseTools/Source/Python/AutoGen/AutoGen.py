@@ -1506,12 +1506,19 @@ class PlatformAutoGen(AutoGen):
         for pcd in self.Platform.Pcds.keys():
             if pcd not in self._PlatformPcds.keys():
                 self._PlatformPcds[pcd] = self.Platform.Pcds[pcd]
+        
+        for item in self._PlatformPcds:
+            if self._PlatformPcds[item].DatumType and self._PlatformPcds[item].DatumType not in [TAB_UINT8, TAB_UINT16, TAB_UINT32, TAB_UINT64, TAB_VOID, "BOOLEAN"]:
+                self._PlatformPcds[item].DatumType = "VOID*"
 
         if (self.Workspace.ArchList[-1] == self.Arch): 
             for Pcd in self._DynamicPcdList:
                 # just pick the a value to determine whether is unicode string type
                 Sku = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]
                 Sku.VpdOffset = Sku.VpdOffset.strip()
+                
+                if Pcd.DatumType not in [TAB_UINT8, TAB_UINT16, TAB_UINT32, TAB_UINT64, TAB_VOID, "BOOLEAN"]:
+                    Pcd.DatumType = "VOID*"
 
                 PcdValue = Sku.DefaultValue
                 if Pcd.DatumType == 'VOID*' and PcdValue.startswith("L"):

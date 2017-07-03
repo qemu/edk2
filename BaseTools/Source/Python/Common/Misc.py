@@ -1581,18 +1581,17 @@ def AnalyzeDscPcd(Setting, PcdType, DataType=''):
         Value = FieldList[0]
         Size = ''
         if len(FieldList) > 1:
-            Type = FieldList[1]
-            # Fix the PCD type when no DataType input
-            if Type == 'VOID*':
-                DataType = 'VOID*'
-            else:
+            if FieldList[1].upper().startswith("0X") or FieldList[1].isdigit():
                 Size = FieldList[1]
+            else:
+                DataType = FieldList[1]
+
         if len(FieldList) > 2:
             Size = FieldList[2]
-        if DataType == 'VOID*':
-            IsValid = (len(FieldList) <= 3)
-        else:
+        if DataType == "":
             IsValid = (len(FieldList) <= 1)
+        else:
+            IsValid = (len(FieldList) <= 3)
 #         Value, Size = ParseFieldValue(Value)
         return [str(Value), '', str(Size)], IsValid, 0
     elif PcdType in (MODEL_PCD_DYNAMIC_DEFAULT, MODEL_PCD_DYNAMIC_EX_DEFAULT):
@@ -1612,10 +1611,10 @@ def AnalyzeDscPcd(Setting, PcdType, DataType=''):
                     Size = str(len(Value.split(",")))
                 else:
                     Size = str(len(Value) -2 + 1 )
-        if DataType == 'VOID*':
-            IsValid = (len(FieldList) <= 3)
-        else:
+        if DataType == "":
             IsValid = (len(FieldList) <= 1)
+        else:
+            IsValid = (len(FieldList) <= 3)
         return [Value, Type, Size], IsValid, 0
     elif PcdType in (MODEL_PCD_DYNAMIC_VPD, MODEL_PCD_DYNAMIC_EX_VPD):
         VpdOffset = FieldList[0]
@@ -1628,10 +1627,11 @@ def AnalyzeDscPcd(Setting, PcdType, DataType=''):
                 Size = FieldList[1]
             if len(FieldList) > 2:
                 Value = FieldList[2]
-        if DataType == 'VOID*':
-            IsValid = (len(FieldList) <= 3)
+        if DataType == "":
+            IsValid = (len(FieldList) <= 1)
         else:
-            IsValid = (len(FieldList) <= 2)
+            IsValid = (len(FieldList) <= 3)
+
         return [VpdOffset, Size, Value], IsValid, 2
     elif PcdType in (MODEL_PCD_DYNAMIC_HII, MODEL_PCD_DYNAMIC_EX_HII):
         HiiString = FieldList[0]

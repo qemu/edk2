@@ -36,35 +36,35 @@ def GetPackageList(Platform, BuildDatabase, Arch, Target, Toolchain):
     return list(PkgSet)
 
 
-def ProcessStructurePcd(StructurePcdRawDataSet):
-    s_pcd_set = dict()
-    for s_pcd in StructurePcdRawDataSet:
-        if s_pcd.TokenSpaceGuidCName not in s_pcd_set:
-            s_pcd_set[s_pcd.TokenSpaceGuidCName] = []
-        s_pcd_set[s_pcd.TokenSpaceGuidCName].append(s_pcd)
-    
-    str_pcd_set = []    
-    for pcdname in s_pcd_set:
-        dep_pkgs = []
-        struct_pcd = StructurePcd() 
-        for item in s_pcd_set[pcdname]:
-            if "<HeaderFiles>" in item.TokenCName:
-                struct_pcd.StructuredPcdIncludeFile = item.DefaultValue
-            elif "<Packages>" in item.TokenCName:
-                dep_pkgs.append(item.DefaultValue)
-            elif item.DatumType == item.TokenCName:
-                struct_pcd.copy(item)
-                struct_pcd.TokenValue.strip("{").strip()
-                struct_pcd.TokenSpaceGuidCName, struct_pcd.TokenCName = pcdname.split(".")
-            else:
-                struct_pcd.AddDefaultValue(item.TokenCName, item.DefaultValue)
-            
-        struct_pcd.PackageDecs = dep_pkgs
-        
-        str_pcd_set.append(struct_pcd)
-        
-    return str_pcd_set
-                    
+# def ProcessStructurePcd(StructurePcdRawDataSet):
+#     s_pcd_set = dict()
+#     for s_pcd in StructurePcdRawDataSet:
+#         if s_pcd.TokenSpaceGuidCName not in s_pcd_set:
+#             s_pcd_set[s_pcd.TokenSpaceGuidCName] = []
+#         s_pcd_set[s_pcd.TokenSpaceGuidCName].append(s_pcd)
+#       
+#     str_pcd_set = []    
+#     for pcdname in s_pcd_set:
+#         dep_pkgs = []
+#         struct_pcd = StructurePcd() 
+#         for item in s_pcd_set[pcdname]:
+#             if "<HeaderFiles>" in item.TokenCName:
+#                 struct_pcd.StructuredPcdIncludeFile = item.DefaultValue
+#             elif "<Packages>" in item.TokenCName:
+#                 dep_pkgs.append(item.DefaultValue)
+#             elif item.DatumType == item.TokenCName:
+#                 struct_pcd.copy(item)
+#                 struct_pcd.TokenValue.strip("{").strip()
+#                 struct_pcd.TokenSpaceGuidCName, struct_pcd.TokenCName = pcdname.split(".")
+#             else:
+#                 struct_pcd.AddDefaultValue(item.TokenCName, item.DefaultValue)
+#               
+#         struct_pcd.PackageDecs = dep_pkgs
+#           
+#         str_pcd_set.append(struct_pcd)
+#           
+#     return str_pcd_set
+#                       
     
 
 ## Get all declared PCD from platform for specified arch, target and toolchain
