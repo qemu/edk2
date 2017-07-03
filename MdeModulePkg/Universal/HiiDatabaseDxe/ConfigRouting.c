@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #include "HiiDatabase.h"
 extern HII_DATABASE_PRIVATE_DATA mPrivate;
+BOOLEAN          mQuestionReferBitVar = FALSE;
 
 /**
   Calculate the number of Unicode characters of the incoming Configuration string,
@@ -1225,7 +1226,7 @@ InsertBlockData (
   for (Link = BlockLink->ForwardLink; Link != BlockLink; Link = Link->ForwardLink) {
     BlockArray = BASE_CR (Link, IFR_BLOCK_DATA, Entry);
     if (BlockArray->Offset == BlockSingleData->Offset) {
-      if (BlockArray->Width > BlockSingleData->Width) {
+      if ((BlockArray->Width > BlockSingleData->Width) || (BlockSingleData->IsBitVar && BlockArray->Width == BlockSingleData->Width)) {
         //
         // Insert this block data in the front of block array
         //
@@ -1233,7 +1234,7 @@ InsertBlockData (
         return;
       }
 
-      if (BlockArray->Width == BlockSingleData->Width) {
+      if ((!BlockSingleData->IsBitVar) && BlockArray->Width == BlockSingleData->Width) {
         //
         // The same block array has been added.
         //
@@ -1993,16 +1994,21 @@ IsThisOpcodeRequired (
   IN OUT IFR_VARSTORAGE_DATA      *VarStorageData,
   IN     EFI_IFR_OP_HEADER        *IfrOpHdr,
   IN     UINT16                   VarWidth,
-  OUT    IFR_BLOCK_DATA           **ReturnData
+  OUT    IFR_BLOCK_DATA           **ReturnData,
+  IN     BOOLEAN                  IsBitVar
   )
 {
   IFR_BLOCK_DATA           *BlockData;
   UINT16                   VarOffset;
   EFI_STRING_ID            NameId;
   EFI_IFR_QUESTION_HEADER  *IfrQuestionHdr;
+  UINT16                   BitOffset;
+  UINT16                   BitWidth;
+  UINT16                   BitVarWidth;
 
   NameId    = 0;
   VarOffset = 0;
+  BitVarWidth = 0;
   IfrQuestionHdr = (EFI_IFR_QUESTION_HEADER  *)((CHAR8 *) IfrOpHdr + sizeof (EFI_IFR_OP_HEADER));
 
   if (VarStorageData->Type == EFI_HII_VARSTORE_NAME_VALUE) {
@@ -2018,7 +2024,15 @@ IsThisOpcodeRequired (
       return EFI_NOT_FOUND;
     }
   } else {
-    VarOffset = IfrQuestionHdr->VarStoreInfo.VarOffset;
+    if (IsBitVar) {
+       BitOffset = IfrQuestionHdr->VarStoreInfo.VarOffset;
+       VarOffset = BitOffset / 8;
+       BitVarWidth = VarWidth;
+       BitWidth  = BitOffset - (VarOffset * 8) + BitVarWidth;
+       VarWidth  = (BitWidth % 8 == 0 ? BitWidth / 8: BitWidth / 8 + 1);
+    } else {
+      VarOffset = IfrQuestionHdr->VarStoreInfo.VarOffset;
+    }
     
     //
     // Check whether this question is in requested block array.
@@ -2053,6 +2067,9 @@ IsThisOpcodeRequired (
   BlockData->QuestionId = IfrQuestionHdr->QuestionId;
   BlockData->OpCode     = IfrOpHdr->OpCode;
   BlockData->Scope      = IfrOpHdr->Scope;
+  BlockData->IsBitVar   = IsBitVar;
+  BlockData->BitOffset  = IfrQuestionHdr->VarStoreInfo.VarOffset;
+  BlockData->BitWidth   = BitVarWidth;
   InitializeListHead (&BlockData->DefaultValueEntry);
   //
   // Add Block Data into VarStorageData BlockEntry
@@ -2126,6 +2143,7 @@ ParseIfrData (
   UINT16                   SmallestDefaultId;
   BOOLEAN                  SmallestIdFromFlag;
   BOOLEAN                  FromOtherDefaultOpcode;
+  BOOLEAN                  IsBitVar;
 
   Status           = EFI_SUCCESS;
   BlockData        = NULL;
@@ -2137,6 +2155,7 @@ ParseIfrData (
   ZeroMem (&DefaultData, sizeof (IFR_DEFAULT_DATA));
   SmallestDefaultId = 0xFFFF;
   FromOtherDefaultOpcode = FALSE;
+  IsBitVar = FALSE;
 
   //
   // Go through the form package to parse OpCode one by one.
@@ -2311,7 +2330,7 @@ ParseIfrData (
         BlockData = NULL;
       }
 
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, FALSE);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2343,7 +2362,15 @@ ParseIfrData (
       if (IfrOneOf->Question.VarStoreId != VarStoreId) {
         break;
       }
-      VarWidth  = (UINT16) (1 << (IfrOneOf->Flags & EFI_IFR_NUMERIC_SIZE));
+
+      if (mQuestionReferBitVar) {
+        mQuestionReferBitVar = FALSE;
+        VarWidth = IfrOneOf->Flags & EFI_IFR_NUMERIC_SIZE_BIT ;
+        IsBitVar = TRUE;
+      } else {
+        VarWidth  = (UINT16) (1 << (IfrOneOf->Flags & EFI_IFR_NUMERIC_SIZE));
+        IsBitVar = FALSE;
+      }
 
       //
       // The BlockData may allocate by other opcode,need to clean.
@@ -2352,7 +2379,7 @@ ParseIfrData (
         BlockData = NULL;
       }
 
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, IsBitVar);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2441,7 +2468,7 @@ ParseIfrData (
         BlockData = NULL;
       }
 
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, FALSE);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2477,6 +2504,7 @@ ParseIfrData (
       if (IfrCheckBox->Question.VarStoreId != VarStoreId) {
         break;
       }
+
       VarWidth  = (UINT16) sizeof (BOOLEAN);
 
       //
@@ -2486,7 +2514,15 @@ ParseIfrData (
         BlockData = NULL;
       }
 
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      if (mQuestionReferBitVar) {
+        mQuestionReferBitVar = FALSE;
+        VarWidth = 1;
+        IsBitVar = TRUE;
+      } else {
+        IsBitVar = FALSE;
+      }
+
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, IsBitVar);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2614,7 +2650,7 @@ ParseIfrData (
       }
 
       VarWidth  = (UINT16) sizeof (EFI_HII_DATE);
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, FALSE);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2656,7 +2692,7 @@ ParseIfrData (
       }
 
       VarWidth  = (UINT16) sizeof (EFI_HII_TIME);
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, FALSE);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2698,7 +2734,7 @@ ParseIfrData (
       }
 
       VarWidth  = (UINT16) (IfrString->MaxSize * sizeof (UINT16));
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, FALSE);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2740,7 +2776,7 @@ ParseIfrData (
       }
 
       VarWidth  = (UINT16) (IfrPassword->MaxSize * sizeof (UINT16));
-      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData);
+      Status = IsThisOpcodeRequired(RequestBlockArray, HiiHandle, VarStorageData, IfrOpHdr, VarWidth, &BlockData, FALSE);
       if (EFI_ERROR (Status)) {
         if (Status == EFI_NOT_FOUND){
           //
@@ -2987,8 +3023,14 @@ ParseIfrData (
           FromOtherDefaultOpcode = FALSE;
         }
       }
+      mQuestionReferBitVar = FALSE;
 
       break;
+
+    case EFI_IFR_GUID_OP:
+      if (CompareGuid ((EFI_GUID *)((UINT8*)IfrOpHdr + sizeof (EFI_IFR_OP_HEADER)), &gEfiIfrBitvarstoreGuid)) {
+        mQuestionReferBitVar = TRUE;
+      }
 
     default:
       if (BlockData != NULL) {
@@ -3569,6 +3611,130 @@ GetStorageWidth (
 }
 
 /**
+For some question (oneof/numeric/checkbox),their storage may be bit filed,
+their block data may have same OFFSET and WIDTH, this function merge the
+same block data to one.
+
+@param      BlockLink     The Link of the block data.
+
+**/
+VOID
+UpdateBlockDataArray(
+  IN LIST_ENTRY        *BlockLink
+)
+{
+  LIST_ENTRY          *Link;
+  LIST_ENTRY          *TempLink;
+  LIST_ENTRY          *ListEntry;
+  LIST_ENTRY          *NextListEntry;
+  LIST_ENTRY          *LinkDefault;
+  LIST_ENTRY          *NextLinkDefault;
+  IFR_BLOCK_DATA      *BlockData;
+  IFR_BLOCK_DATA      *NextBlockeData;
+  IFR_DEFAULT_DATA    *DefaultValueData;
+  IFR_DEFAULT_DATA    *NextDefaultValueData;
+  UINT32              Value;
+  UINT32              Mask;
+  UINT32              PreBits;
+  UINT32              *DefaultValue;
+  UINT8               *BufferValue;
+  BOOLEAN             BlockDataChanged;
+  BOOLEAN             DefaultIdChanged;
+  BOOLEAN             NextBlockChanged;
+
+  Value = 0;
+  Link = BlockLink->ForwardLink;
+  BlockDataChanged = TRUE;
+  DefaultIdChanged = FALSE;
+  NextBlockChanged = FALSE;
+
+  while (Link != BlockLink) {
+    BlockData = BASE_CR (Link, IFR_BLOCK_DATA, Entry);
+    TempLink = Link->ForwardLink;
+    if (!BlockData ->IsBitVar) {
+      Link = Link->ForwardLink;
+      continue;
+    }
+
+    while (TempLink != Link) {
+      NextBlockeData = BASE_CR (TempLink, IFR_BLOCK_DATA, Entry);
+      TempLink = TempLink->ForwardLink;
+      if (BlockData->Offset != NextBlockeData->Offset || BlockData->Width != NextBlockeData->Width) {
+        continue;
+      }
+      //
+      // They are the same blocks, merge them to one, and update the default value.
+      //
+      ListEntry     = &BlockData->DefaultValueEntry;
+      for (LinkDefault = ListEntry->ForwardLink; LinkDefault != ListEntry; LinkDefault = LinkDefault->ForwardLink) {
+        DefaultValueData = BASE_CR (LinkDefault, IFR_DEFAULT_DATA, Entry);
+        NextListEntry = &NextBlockeData->DefaultValueEntry;
+        for (NextLinkDefault = NextListEntry->ForwardLink; NextLinkDefault != NextListEntry; NextLinkDefault = NextLinkDefault->ForwardLink) {
+          NextDefaultValueData = BASE_CR (NextLinkDefault, IFR_DEFAULT_DATA, Entry);
+          if (DefaultValueData->DefaultId != NextDefaultValueData->DefaultId) {
+            continue;
+          }
+          //
+          // The default value with same default id.
+          //
+          if (BlockDataChanged) {
+            Mask = (1 << BlockData->BitWidth) - 1;
+            PreBits = BlockData->BitOffset - BlockData->Offset * 8;
+            DefaultValue = (UINT32*)&(DefaultValueData->Value);
+            *DefaultValue <<= PreBits;
+            Mask <<= PreBits;
+            Value = (Value & (~Mask)) | *DefaultValue;
+            BlockDataChanged = FALSE;
+          } else if (!BlockDataChanged && !NextBlockChanged && DefaultIdChanged){
+            Mask = (1 << BlockData->BitWidth) - 1;
+            PreBits = BlockData->BitOffset - BlockData->Offset * 8;
+            DefaultValue = (UINT32*)&(DefaultValueData->Value);
+            *DefaultValue <<= PreBits;
+            Mask <<= PreBits;
+            Value = (Value & (~Mask)) | *DefaultValue;
+            DefaultIdChanged = FALSE;
+          } else if (!BlockDataChanged && NextBlockChanged) {
+            BufferValue = (UINT8*)&(DefaultValueData->Value);
+            Value = (UINTN)(*BufferValue);
+          }
+
+          Mask = (1 << NextBlockeData->BitWidth) - 1;
+          PreBits = NextBlockeData->BitOffset - NextBlockeData->Offset * 8;
+          DefaultValue = (UINT32*) & (NextDefaultValueData->Value);
+          *DefaultValue <<= PreBits;
+          Mask <<= PreBits;
+          Value = (Value & (~Mask)) | *DefaultValue;
+
+          CopyMem (&DefaultValueData->Value, &Value, sizeof (EFI_IFR_TYPE_VALUE));
+        }
+        DefaultIdChanged = TRUE;
+      }
+      RemoveEntryList (&NextBlockeData->Entry);
+      if (NextBlockeData->Name != NULL) {
+        FreePool (NextBlockeData->Name);
+      }
+      //
+      // Free default value link array
+      //
+      while (!IsListEmpty (&NextBlockeData->DefaultValueEntry)) {
+        DefaultValueData = BASE_CR (NextBlockeData->DefaultValueEntry.ForwardLink, IFR_DEFAULT_DATA, Entry);
+        RemoveEntryList (&DefaultValueData->Entry);
+        FreePool (DefaultValueData);
+      }
+      FreePool (NextBlockeData);
+
+      Link->ForwardLink = TempLink;
+      NextBlockChanged = TRUE;
+    }
+
+    Link = Link->ForwardLink;
+    BlockDataChanged = TRUE;
+    NextBlockChanged = FALSE;
+    DefaultIdChanged = FALSE;
+  }
+}
+
+/**
   Generate ConfigAltResp string base on the varstore info.
 
   @param      HiiHandle             Hii Handle for this hii package.
@@ -3611,6 +3777,8 @@ GenerateAltConfigResp (
   // Add length for <ConfigHdr> + '\0'
   //
   Length = StrLen (ConfigHdr) + 1;
+
+  UpdateBlockDataArray (&VarStorageData->BlockEntry);
 
   for (Link = DefaultIdArray->Entry.ForwardLink; Link != &DefaultIdArray->Entry; Link = Link->ForwardLink) {
     DefaultId = BASE_CR (Link, IFR_DEFAULT_DATA, Entry);
