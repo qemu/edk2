@@ -16,7 +16,10 @@ https://bugzilla.tianocore.org/show_bug.cgi?id=541 [BaseTools] Extended PCD Valu
 https://bugzilla.tianocore.org/show_bug.cgi?id=542 [BaseTools] Structure PCD value assignment in DEC/DSC
   The first version POC has been added to support FixedAtBuild and Patchable StructurePcd value assignment in dec and dsc file.
   TestPkg DEC/DSC and Application shows StructurePcd declaration, value assignment and consumed in source code.
-  TestPkg Application can directly be built with build command.
+  TestPkg TestApp can directly be built with build command.
+  POC has been updated to support DynamicPcd/DynamicExPcd. 
+  TestPkg DSC/FDF are updated to include NT32 emualtion platform. 
+  TestPkg TestApp are updated to consume structure PCD with all types.
 
 https://bugzilla.tianocore.org/show_bug.cgi?id=543 [BaseTools] Extended SKU Support - Inheritance
 
@@ -40,4 +43,5 @@ In Linux, BaseTools run from source. In Windows, BaseTools can run from source. 
   set PYTHON_HOME=C:\Python27
   edksetup.bat --nt32
   nmake -f BaseTools\Makefile
-  build -p TestPkg\TestPkg.dsc
+  build -p TestPkg\TestPkg.dsc -y Report.txt
+  build -p TestPkg\TestPkg.dsc run # trig NT32 platform, and show dynamic PCD.
