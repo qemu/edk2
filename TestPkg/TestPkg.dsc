@@ -326,64 +326,48 @@
   gEfiMdePkgTokenSpaceGuid.PcdHardwareErrorRecordLevel|L"HwErrRecSupport"|gEfiGlobalVariableGuid|0x0|1
 
 [PcdsFixedAtBuild]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test|{0xFF, 0xFF}|TEST
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.A|MacroTest2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.C|"a"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.FlexibleArray[7]|5
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.FlexibleArray[4]|L"C"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.FlexibleArray[3]|"b"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.Array2|{1, 2, 3}
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.Array|L"Hello World"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.C|"a"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.FlexibleArray[7]|5
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.FlexibleArray[4]|L"C"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.FlexibleArray[3]|"b"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.Array2|{1, 2, 3}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.Array|L"Hello World"
 
 [PcdsPatchableInModule]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2|{0xFF, 0xFF}|TEST2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.A|MacroTest2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.C|"a"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray[7]|5
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray[4]|L"C"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray[3]|"b"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray|"World"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray|L"World"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.C|"b"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.FlexibleArray|L"Patchable"
 
 [PcdsDynamicDefault]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3|{0xFF, 0xFF}|TEST2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.A|MacroTest2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.C|"a"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray[7]|5
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray[4]|L"C"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray[3]|"b"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray|"World"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray|L"World"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.C|"c"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.FlexibleArray|L"DynamicDefault"
 
-[PcdsDynamicHii]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4|"TestHii"|gTestHiiVarGuid|0x00|{0xFF, 0xFF}
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.A|MacroTest2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.C|"a"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray[7]|5
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray[4]|L"C"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray[3]|"b"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray|"World"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray|L"World"
+[PcdsDynamicExHii]
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii|L"TestHii"|gTestHiiVarGuid|0x00|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.C|"d"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Guid|GUID("EB216561-961F-47EE-9EF9-CA426EF547C2")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHii"
 
 [PcdsDynamicVpd]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5|*
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.A|MacroTest2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.C|"a"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray[7]|5
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray[4]|L"C"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray[3]|"b"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray|"World"
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray|L"World"
-    
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd|*
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.C|"e"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Guid|GUID("8C3D856A-9BE6-468E-850A-24F7A8D38E08")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.FlexibleArray|L"PcdsDynamicVpd"
+
 ###################################################################################################
 #
 # Components Section - list of the modules and components that will be processed by compilation

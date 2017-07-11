@@ -40,12 +40,12 @@
   PcdLib
 
 [FixedPcd]
-gEfiStructuredPcdPkgTokenSpaceGuid.Test
+gEfiStructuredPcdPkgTokenSpaceGuid.TestFix
 
 [PatchPcd]
-gEfiStructuredPcdPkgTokenSpaceGuid.Test2
+gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable
 
 [Pcd]
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5
+gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic
+gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii
+gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd

@@ -41,16 +41,26 @@ UefiMain (
   TEST2   *Test2;
   TEST2   *Test3;
   TEST2   *Test4;
+  UINTN   PcdSize;
 
-  Test  = (TEST *) PcdGetPtr (Test);
-  Test2 = (TEST2 *) PcdGetPtr (Test2);
-  Test3 = (TEST2 *) PcdGetPtr (Test3);
-  Test4 = (TEST2 *) PcdGetPtr (Test4);
+  Test  = (TEST *) PcdGetPtr (TestFix);
+  Test2 = (TEST2 *) PcdGetPtr (TestPatchable);
+  Test3 = (TEST2 *) PcdGetPtr (TestDynamic);
+  Test4 = (TEST2 *) PcdGetPtr (TestDynamicExHii);
 
-  Print (L"Test.Array is %s\n", (CHAR16*)Test->Array);
-  Print (L"Test2.Guid is %g\n", Test2->Guid);
-  Print (L"Test3.Array is %s\n", (CHAR16*)Test3->Array2);
-  Print (L"Test4.Guid is %g\n", Test4->Guid);
+  Print (L"TestFix.Array is %s\n", (CHAR16*)Test->Array);
+  Print (L"TestPatchable.Guid is %g\n", Test2->Guid);
+  Print (L"TestDynamic.FlexibleArray is %s\n", (CHAR16*)Test3->FlexibleArray);
+  Print (L"TestDynamicExHii.Guid is %g\n", Test4->Guid);
+
+  Test3->OneLineBoolA = TRUE;
+  PcdSize = PcdGetSize (TestDynamic);
+  PcdSetPtrS (TestDynamic, &PcdSize, Test3);
+  
+  Test4->Array2[0] = 0;
+  Test4->Array2[1] = 1;
+  PcdSize = PcdGetSize (TestDynamicExHii);
+  PcdSetPtrS (TestDynamicExHii, &PcdSize, Test4);
   
   return EFI_SUCCESS;
 }

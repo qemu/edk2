@@ -31,64 +31,64 @@
 
 [PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
   # @Prompt Test Strucutre
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test|{0xFF, 0xFF}|TEST|0x00010071 {
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix|{0xFF, 0xFF}|TEST|0x00010071 {
     <HeaderFiles>
-      Guid/Test.h   # for Guid/Ppi/Protocol, reuse header file.
+      Guid/Test.h     # for Guid/Ppi/Protocol, reuse header file.
       # Pcd/PcdTest.h # New Pcd directory in Include dir for PCD only
     <Packages>
       MdePkg/MdePkg.dec
       TestPkg/TestPkg.dec
   }
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.A|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.C|20
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test.FlexibleArray[7]|5
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestFix.FlexibleArray[7]|5
   
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2|{0xFF, 0xFF}|TEST2|0x00010072 {
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable|{0xFF, 0xFF}|TEST2|0x00010072 {
     <HeaderFiles>
       Guid/Test2.h
     <Packages>
       MdePkg/MdePkg.dec
       TestPkg/TestPkg.dec
   }
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.A|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.C|20
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test2.FlexibleArray[7]|5
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.FlexibleArray[7]|5
 
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3|{0xFF, 0xFF}|TEST2|0x00010073 {
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic|{0xFF, 0xFF}|TEST2|0x00010073 {
     <HeaderFiles>
       Guid/Test2.h
     <Packages>
       MdePkg/MdePkg.dec
       TestPkg/TestPkg.dec
   }
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.A|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.C|20
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test3.FlexibleArray[7]|5
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.FlexibleArray[7]|5
 
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4|{0xFF, 0xFF}|TEST2|0x00010074 {
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii|{0xFF, 0xFF}|TEST2|0x00010074 {
     <HeaderFiles>
       Guid/Test2.h
     <Packages>
       MdePkg/MdePkg.dec
       TestPkg/TestPkg.dec
   }
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.A|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.C|20
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test4.FlexibleArray[7]|5
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray[7]|5
 
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5|{0xFF, 0xFF}|TEST2|0x00010075 {
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd|{0xFF, 0xFF}|TEST2|0x00010075 {
     <HeaderFiles>
       Guid/Test2.h
     <Packages>
       MdePkg/MdePkg.dec
       TestPkg/TestPkg.dec
   }
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.A|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.C|20
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.Array2[0]|2
-  gEfiStructuredPcdPkgTokenSpaceGuid.Test5.FlexibleArray[7]|5
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.A|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.C|20
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.FlexibleArray[7]|5
   
