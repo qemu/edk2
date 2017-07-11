@@ -109,11 +109,10 @@ class StructurePcd(PcdClassObject):
         super(StructurePcd, self).__init__(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided, GuidValue, validateranges, validlists, expressions)
         self.StructuredPcdIncludeFile = StructuredPcdIncludeFile
         self.PackageDecs = Packages
-        self.SkuName = 'DEFAULT'
-        self.DefaultStoreName = 'DEFAULT'
+        self.DefaultStoreName = ['DEFAULT']
         self.DefaultValues = collections.OrderedDict({})
         self.PcdMode = None
-        self.OverrideValues = collections.OrderedDict({})
+        self.SkuOverrideValues = collections.OrderedDict({})
         self.FlexibleFieldName = None
         
     def __repr__(self):
@@ -123,9 +122,11 @@ class StructurePcd(PcdClassObject):
         self.DefaultValues[FieldName] = [Value.strip(), FileName, LineNo]
         return self.DefaultValues[FieldName]
 
-    def AddOverrideValue (self, FieldName, Value, FileName="", LineNo=0):
-        self.OverrideValues[FieldName] = [Value.strip(), FileName, LineNo]
-        return self.OverrideValues[FieldName]
+    def AddOverrideValue (self, FieldName, Value, SkuName, FileName="", LineNo=0):
+        if SkuName not in self.SkuOverrideValues:
+            self.SkuOverrideValues[SkuName] = collections.OrderedDict({})
+        self.SkuOverrideValues[SkuName][FieldName] = [Value.strip(), FileName, LineNo]
+        return self.SkuOverrideValues[SkuName][FieldName]
 
     def SetPcdMode (self, PcdMode):
         self.PcdMode = PcdMode
@@ -156,7 +157,7 @@ class StructurePcd(PcdClassObject):
             self.PackageDecs = PcdObject.PackageDecs if PcdObject.PackageDecs else self.PackageDecs 
             self.DefaultValues = PcdObject.DefaultValues if PcdObject.DefaultValues else self.DefaultValues
             self.PcdMode = PcdObject.PcdMode if PcdObject.PcdMode else self.PcdMode
-            self.OverrideValues = PcdObject.OverrideValues if PcdObject.OverrideValues else self.OverrideValues
+            self.OverrideValues = PcdObject.SkuOverrideValues if PcdObject.SkuOverrideValues else self.SkuOverrideValues
             self.FlexibleFieldName = PcdObject.FlexibleFieldName if PcdObject.FlexibleFieldName else self.FlexibleFieldName
 
 ## LibraryClassObject
