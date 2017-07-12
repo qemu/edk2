@@ -29,7 +29,7 @@
   OUTPUT_DIRECTORY               = Build/TestIa32
   SUPPORTED_ARCHITECTURES        = IA32
   BUILD_TARGETS                  = DEBUG|RELEASE|NOOPT
-  SKUID_IDENTIFIER               = DEFAULT
+  SKUID_IDENTIFIER               = ALL
   FLASH_DEFINITION               = TestPkg/TestPkg.fdf
   VPD_TOOL_GUID                  = 8C3D856A-9BE6-468E-850A-24F7A8D38E08
   #
@@ -85,6 +85,7 @@
 ################################################################################
 [SkuIds]
   0|DEFAULT              # The entry: 0|DEFAULT is reserved and always required.
+  1|SKU1
 
 ################################################################################
 #
@@ -344,29 +345,53 @@
   gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestPatchable.FlexibleArray|L"Patchable"
 
-[PcdsDynamicDefault]
+[PcdsDynamicDefault.common.DEFAULT]
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic|{0xFF, 0xFF}
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.A|MacroTest2
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.C|"c"
-  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Array2[0]|0
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.FlexibleArray|L"DynamicDefault"
 
-[PcdsDynamicExHii]
+[PcdsDynamicDefault.common.SKU1]
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.C|"c"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Array2[0]|1
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.FlexibleArray|L"DynamicDefaultSku1"
+
+[PcdsDynamicExHii.common.DEFAULT]
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii|L"TestHii"|gTestHiiVarGuid|0x00|{0xFF, 0xFF}
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.A|MacroTest2
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.C|"d"
-  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|0
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Guid|GUID("EB216561-961F-47EE-9EF9-CA426EF547C2")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHii"
 
-[PcdsDynamicVpd]
+[PcdsDynamicExHii.common.SKU1]
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii|L"TestHii"|gTestHiiVarGuid|0x00|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.C|"d"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|1
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Guid|GUID("EB216561-961F-47EE-9EF9-CA426EF547C2")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHiiSku1"
+
+[PcdsDynamicVpd.common.DEFAULT]
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd|*
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.A|MacroTest2
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.C|"e"
-  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Array2[0]|2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Array2[0]|0
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Guid|GUID("8C3D856A-9BE6-468E-850A-24F7A8D38E08")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.FlexibleArray|L"PcdsDynamicVpd"
+
+[PcdsDynamicVpd.common.SKU1]
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd|*
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.C|"e"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Array2[0]|1
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.Guid|GUID("8C3D856A-9BE6-468E-850A-24F7A8D38E08")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.FlexibleArray|L"PcdsDynamicVpdSku1"
 
 ###################################################################################################
 #
