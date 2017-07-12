@@ -20,6 +20,8 @@ https://bugzilla.tianocore.org/show_bug.cgi?id=542 [BaseTools] Structure PCD val
   POC has been updated to support DynamicPcd/DynamicExPcd. 
   TestPkg DSC/FDF are updated to include NT32 emualtion platform. 
   TestPkg TestApp are updated to consume structure PCD with all types.
+  POC has been updated to support PCD when more than one SkuId. 
+  TestPkg.dsc adds two SKUIDs cases. 
 
 https://bugzilla.tianocore.org/show_bug.cgi?id=543 [BaseTools] Extended SKU Support - Inheritance
 
