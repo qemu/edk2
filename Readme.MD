@@ -28,6 +28,8 @@ https://bugzilla.tianocore.org/show_bug.cgi?id=543 [BaseTools] Extended SKU Supp
 https://bugzilla.tianocore.org/show_bug.cgi?id=544 [BaseTools] PCD: Extended SKU support 2 - sub SKU
 
 https://bugzilla.tianocore.org/show_bug.cgi?id=545 [BaseTools] Support Bit fields used as EFI VarStore/Buffer VarStore in VFR
+  POC has been pushed. MdeModulePkg/DriverSample is also updated to add the sample code to show the structure
+  with bit field and UNION type. 
 
 https://bugzilla.tianocore.org/show_bug.cgi?id=546 [PCD] Pcd Database size optimization for multi-SKU
 
