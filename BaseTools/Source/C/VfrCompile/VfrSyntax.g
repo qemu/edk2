@@ -2681,7 +2681,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           }
                                                           if (_GET_CURRQEST_VARTINFO().mIsBitVar) {
                                                             MaxU4 = _STOU32(A->getText(), A->getLine());
-                                                            if (!IntDecStyle && MaxU4 > pow (2,_GET_CURRQEST_VARTINFO().mVarTotalSize) -1) {
+                                                            if (!IntDecStyle && MaxU4 > (1<< _GET_CURRQEST_VARTINFO().mVarTotalSize) -1) {
                                                               _PCATCH (VFR_RETURN_INVALID_PARAMETER, A->getLine(), "BIT type maximum can't bigger than 2^BitWidth -1");
                                                             }
                                                           }  else {
