@@ -79,7 +79,7 @@ PcdMakefileHeader = '''
 PcdMakefileEnd = '''
 !INCLUDE $(BASE_TOOLS_PATH)\Source\C\Makefiles\ms.common
 
-CFLAGS = $(CFLAGS) /wd4200 /wd4034
+CFLAGS = $(CFLAGS) /wd4200 /wd4034 /wd4101
 
 LIBS = $(LIB_PATH)\Common.lib
 
@@ -895,6 +895,7 @@ class DscBuildData(PlatformBuildClassObject):
             RecordList.extend(self._RawData[Type, self._Arch])
 
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
+            SkuName = 'DEFAULT' if SkuName == 'COMMON' else SkuName
             if SkuName in SkuObj.SkuIdSet and "." in TokenSpaceGuid:
                 S_PcdSet.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4, AnalyzePcdExpression(Setting)[0]))
                 
@@ -910,7 +911,7 @@ class DscBuildData(PlatformBuildClassObject):
                 str_pcd_obj_str.copy(str_pcd_obj)
                 for str_pcd_data in StrPcdSet[str_pcd]:
                     if str_pcd_data[2] in SkuObj.SkuIdSet:
-                        str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]), 'DEFAULT' if str_pcd_data[2] == 'COMMON' else str_pcd_data[2])
+                        str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]), 'DEFAULT' if str_pcd_data[2] == 'COMMON' else str_pcd_data[2],self.MetaFile.File,LineNo=str_pcd_data[3])
                 S_pcd_set[str_pcd.split(".")[1], str_pcd.split(".")[0]] = str_pcd_obj_str
         Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
         if Str_Pcd_Values:
@@ -1275,8 +1276,10 @@ class DscBuildData(PlatformBuildClassObject):
                 File = open (FileName, 'r')
                 FileData = File.readlines()
                 File.close()
-                print Message
+                print " "
                 print FileData[int (FileLine) - 1]
+                EdkLogger.error("build", PCD_STRUCTURE_PCD_ERROR, Message)
+                    
                 
         
         PcdValueInitExe = PcdValueInitName

@@ -150,7 +150,7 @@ __PcdGet (
     return (UINT64)strtoul(PcdList[Index].Value, &End, 16);
     break;
   case PcdDataTypeUint64:
-    return (UINT64)strtoull(PcdList[Index].Value, &End, 16);
+    return (UINT64)strtoul(PcdList[Index].Value, &End, 16);
     break;
   case PcdDataTypePointer:
     fprintf (stderr, "PCD %s.%s.%s.%s is structure.  Use PcdGetPtr()\n", SkuName, DefaultValueName, TokenSpaceGuidName, TokenName);
