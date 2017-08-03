@@ -378,6 +378,7 @@
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHiiSku1"
 
 [PcdsDynamicVpd.common.DEFAULT]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdNvStoreDefaultValueBuffer|*
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd|*
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.A|MacroTest2
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.C|"e"
