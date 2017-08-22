@@ -87,6 +87,10 @@
   0|DEFAULT              # The entry: 0|DEFAULT is reserved and always required.
   1|SKU1
 
+[DefaultStores]
+  0|STANDARD             # UEFI Standard default  0|STANDARD is reserved.
+  1|MANUFACTURING        # UEFI Manufacturing default 1|MANUFACTURING is reserved.
+
 ################################################################################
 #
 # Library Class section - list of all Library Classes needed by this Platform.
@@ -361,12 +365,20 @@
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.Guid|GUID("6F08F62E-5C19-498E-9157-B59CE6F362F1")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamic.FlexibleArray|L"DynamicDefaultSku1"
 
-[PcdsDynamicExHii.common.DEFAULT]
+[PcdsDynamicExHii.common.DEFAULT.STANDARD]
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii|L"TestHii"|gTestHiiVarGuid|0x00|{0xFF, 0xFF}
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.A|MacroTest2
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.C|"d"
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|0
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Guid|GUID("EB216561-961F-47EE-9EF9-CA426EF547C2")
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHii"
+
+[PcdsDynamicExHii.common.DEFAULT.MANUFACTURING]
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii|L"TestHii"|gTestHiiVarGuid|0x00|{0xFF, 0xFF}
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.A|MacroTest2
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.C|"m"
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Array2[0]|0
+  gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Guid|GUID("8C3D856A-9BE6-468E-850A-24F7A8D38E08")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHii"
 
 [PcdsDynamicExHii.common.SKU1]
@@ -377,8 +389,10 @@
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.Guid|GUID("EB216561-961F-47EE-9EF9-CA426EF547C2")
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicExHii.FlexibleArray|L"PcdsDynamicExHiiSku1"
 
-[PcdsDynamicVpd.common.DEFAULT]
+[PcdsDynamicExVpd.common.DEFAULT]
   gEfiMdeModulePkgTokenSpaceGuid.PcdNvStoreDefaultValueBuffer|*
+
+[PcdsDynamicVpd.common.DEFAULT]
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd|*
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.A|MacroTest2
   gEfiStructuredPcdPkgTokenSpaceGuid.TestDynamicVpd.C|"e"
