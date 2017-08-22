@@ -962,10 +962,11 @@ class DscBuildData(PlatformBuildClassObject):
         RecordList = self._RawData[Type, self._Arch]
         PcdValueDict = sdict()
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            if SkuName in (SkuObj.SystemSkuId, 'DEFAULT', 'COMMON'):
-                if "." not in TokenSpaceGuid:
-                    PcdSet.add((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
-                PcdDict[Arch, PcdCName, TokenSpaceGuid, SkuName] = Setting
+            if SkuName not in (SkuObj.SystemSkuId, 'DEFAULT', 'COMMON'):
+                EdkLogger.error('Build', OPTION_VALUE_INVALID, "The SKUID name %s is not supported by the platform." % SkuName)
+            if "." not in TokenSpaceGuid:
+                PcdSet.add((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
+            PcdDict[Arch, PcdCName, TokenSpaceGuid, SkuName] = Setting
         
         for PcdCName, TokenSpaceGuid, SkuName, Dummy4 in PcdSet:
             Setting = PcdDict[self._Arch, PcdCName, TokenSpaceGuid, SkuName]
@@ -1329,7 +1330,7 @@ class DscBuildData(PlatformBuildClassObject):
         
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             if SkuName not in AvailableSkuIdSet:
-                continue
+                EdkLogger.error('Build', OPTION_VALUE_INVALID, "The SKUID name %s is not supported by the platform." % SkuName)
             if "." not in TokenSpaceGuid:
                 PcdList.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
@@ -1424,7 +1425,7 @@ class DscBuildData(PlatformBuildClassObject):
         AvailableSkuIdSet.update({'DEFAULT':0, 'COMMON':0})
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             if SkuName not in AvailableSkuIdSet:
-                continue
+                EdkLogger.error('Build', OPTION_VALUE_INVALID, "The SKUID name %s is not supported by the platform." % SkuName)
             if "." not in TokenSpaceGuid:
                 PcdSet.add((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
@@ -1559,7 +1560,7 @@ class DscBuildData(PlatformBuildClassObject):
         AvailableSkuIdSet.update({'DEFAULT':0, 'COMMON':0})
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             if SkuName not in AvailableSkuIdSet:
-                continue
+                EdkLogger.error('Build', OPTION_VALUE_INVALID, "The SKUID name %s is not supported by the platform." % SkuName)
             if "." not in TokenSpaceGuid:
                 PcdList.append((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
