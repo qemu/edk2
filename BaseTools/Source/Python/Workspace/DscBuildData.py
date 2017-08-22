@@ -1288,11 +1288,18 @@ class DscBuildData(PlatformBuildClassObject):
                 File = open (FileName, 'r')
                 FileData = File.readlines()
                 File.close()
-                print " "
-                print FileData[int (FileLine) - 1]
-                EdkLogger.error("build", PCD_STRUCTURE_PCD_ERROR, Message)
-                    
+                error_line = FileData[int (FileLine) - 1]
+                if r"//" in error_line:
+                    c_line,dsc_line = error_line.split(r"//")
+                else:
+                    dsc_line = error_line
                 
+                message_itmes = Message.split(":")
+                for item in message_itmes:
+                    if "PcdValueInit.c" in item:
+                        message_itmes[message_itmes.index(item)] = dsc_line.strip()
+                
+                EdkLogger.error("build", PCD_STRUCTURE_PCD_ERROR, ":".join(message_itmes[1:]))
         
         PcdValueInitExe = PcdValueInitName
         if not sys.platform == "win32":
