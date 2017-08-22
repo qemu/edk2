@@ -243,7 +243,7 @@ __PcdGetPtr (
     }
     Buffer = malloc(*Size);
     Value = &PcdList[Index].Value[1];
-    for (*Size = 0, Buffer[*Size] = (UINT8) strtoul(Value, &End, 16); Value != End; Buffer[*Size] = (UINT8) strtoul(Value, &End, 16), *Size = *Size + 1) {
+    for (*Size = 0, Buffer[*Size] = (UINT8) strtoul(Value, &End, 16); Value != End; *Size = *Size + 1, Buffer[*Size] = (UINT8) strtoul(Value, &End, 16)) {
       Value = End + 1;
     }
     return Buffer;
