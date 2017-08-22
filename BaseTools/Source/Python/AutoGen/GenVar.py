@@ -160,10 +160,10 @@ class Variable(object):
                 delta_data = [(item[0] + offset, item[1]) for item in delta_data]
                 delta_data_set.extend(delta_data)
                 
-            data_delta_structure_buffer += self.AlignData(self.PACK_DELTA_DATA(skuid,defaultid,delta_data_set))
+            data_delta_structure_buffer += self.AlignData(self.PACK_DELTA_DATA(defaultid,skuid,delta_data_set))
             print "delta data"
             print delta_data_set
-            print self.format_data(self.AlignData(self.PACK_DELTA_DATA(skuid,defaultid,delta_data_set)))
+            print self.format_data(self.AlignData(self.PACK_DELTA_DATA(defaultid,skuid,delta_data_set)))
                 
         return self.format_data(nv_default_part + data_delta_structure_buffer)      
     
@@ -258,8 +258,7 @@ class Variable(object):
     
     def PACK_DEFAULT_DATA(self, defaultstoragename,skuid,var_value):
         Buffer = ""
-        
-        Buffer += pack("=H",10)
+        Buffer += pack("=H",6)
         Buffer += pack("=H",int(defaultstoragename))
         Buffer += pack("=H",int(skuid))
         
@@ -272,14 +271,14 @@ class Variable(object):
     
     def PACK_DELTA_DATA(self,defaultstoragename,skuid,delta_list):
         Buffer = ""
-        Buffer += pack("=H",10)
+        Buffer += pack("=H",6)
         Buffer += pack("=H",int(defaultstoragename))
         Buffer += pack("=H",int(skuid))
         for (delta_offset,value) in delta_list:
             Buffer += pack("=L",delta_offset)
             Buffer = Buffer[:-1] + pack("=B",value)
     
-        Buffer = pack("=L",len(Buffer)) + Buffer
+        Buffer = pack("=L",len(Buffer) + 4) + Buffer
 
         return Buffer
     
