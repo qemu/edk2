@@ -23,6 +23,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Ppi/PiPcdInfo.h>
 #include <Guid/PcdDataBaseHobGuid.h>
 #include <Guid/PcdDataBaseSignatureGuid.h>
+#include <Guid/VariableFormat.h>
 #include <Library/DebugLib.h>
 #include <Library/PeimEntryPoint.h>
 #include <Library/BaseLib.h>

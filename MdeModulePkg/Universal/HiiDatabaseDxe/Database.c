@@ -531,6 +531,476 @@ RemoveGuidPackages (
   return EFI_SUCCESS;
 }
 
+#define BASE_NUMBER 10
+UINTN  mNvDefaultStoreSize = 0;
+UINT16 mSkuId = 0xFFFF;
+LIST_ENTRY mVarStorageList = INITIALIZE_LIST_HEAD_VARIABLE (mVarStorageList);
+
+/**
+  Check the input question related to EFI variable
+
+  @param IfrQuestionHdr     Point to Question header
+  @param EfiVarStoreList    Point to EFI VarStore List
+  @param EfiVarStoreNumber  The number of EFI VarStore
+  
+  @retval Index             The index of the found EFI varstore in EFI varstore list
+                            EfiVarStoreNumber will return if no EFI varstore is found. 
+**/
+UINTN
+IsEfiVarStoreQuestion (
+  EFI_IFR_QUESTION_HEADER *IfrQuestionHdr,
+  EFI_IFR_VARSTORE_EFI    **EfiVarStoreList,
+  UINTN                   EfiVarStoreNumber
+  )
+{
+  UINTN Index;
+  for (Index = 0; Index < EfiVarStoreNumber; Index ++) {
+    if (IfrQuestionHdr->VarStoreId == EfiVarStoreList[Index]->VarStoreId) {
+      return Index;
+    }
+  }
+  
+  return EfiVarStoreNumber;
+}
+
+/**
+  Find the matched variable from the input variable storage.
+
+  @param[in] VariableStorage Point to the variable storage header.
+  @param[in] VarGuid         A unique identifier for the variable.
+  @param[in] VarAttribute    The attributes bitmask for the variable.
+  @param[in] VarName         A Null-terminated ascii string that is the name of the variable.
+
+  @return Pointer to the matched variable header or NULL if not found.
+**/
+VARIABLE_HEADER *
+FindVariableData (
+  IN  VARIABLE_STORE_HEADER  *VariableStorage,
+  IN  EFI_GUID               *VarGuid,
+  IN  UINT32                 VarAttribute,
+  IN  CHAR16                 *VarName
+  )
+{
+  VARIABLE_HEADER *VariableHeader;
+  VARIABLE_HEADER *VariableEnd;
+  
+  VariableEnd    = (VARIABLE_HEADER *) ((UINT8 *) VariableStorage + VariableStorage->Size);
+  VariableHeader = (VARIABLE_HEADER *) (VariableStorage + 1);
+  VariableHeader = (VARIABLE_HEADER *) HEADER_ALIGN (VariableHeader);
+  while (VariableHeader < VariableEnd) {
+    if (CompareGuid (&VariableHeader->VendorGuid, VarGuid) && 
+        VariableHeader->Attributes == VarAttribute && 
+        StrCmp (VarName, (CHAR16 *) (VariableHeader + 1))) {
+      return VariableHeader;
+    }
+    VariableHeader = (VARIABLE_HEADER *) ((UINT8 *) VariableHeader + sizeof (VARIABLE_HEADER) + VariableHeader->NameSize + VariableHeader->DataSize);
+    VariableHeader = (VARIABLE_HEADER *) HEADER_ALIGN (VariableHeader);
+  }
+  
+  return NULL;
+}
+
+/**
+  Find question default value from PcdNvStoreDefaultValueBuffer
+
+  @param DefaultId          Default store ID
+  @param EfiVarStore        Point to EFI VarStore header
+  @param IfrQuestionHdr     Point to Question header
+  @param ValueBuffer        Point to Buffer includes the found default setting
+  @param Width              Width of the default value
+
+  @retval EFI_SUCCESS       Question default value is found.
+  @retval EFI_NOT_FOUND     Question default value is not found. 
+**/
+EFI_STATUS
+FindQuestionDefaultSetting (
+  IN  UINT16                  DefaultId,
+  IN  EFI_IFR_VARSTORE_EFI    *EfiVarStore,
+  IN  EFI_IFR_QUESTION_HEADER *IfrQuestionHdr,
+  OUT VOID                    *ValueBuffer,
+  IN  UINTN                   Width
+  )
+{
+  VARIABLE_HEADER *VariableHeader;
+  VARIABLE_STORE_HEADER *VariableStorage;
+  LIST_ENTRY                       *Link;
+  VARSTORAGE_DEFAULT_DATA          *Entry;
+  UINT8        *DataBuffer;
+  DEFAULT_DATA *DataHeader;
+  DEFAULT_INFO *DefaultInfo;
+  DATA_DELTA   *DeltaData;
+  UINT8        *BufferEnd;
+  BOOLEAN      IsFound;
+  VARIABLE_STORE_HEADER *NvStoreBuffer;
+  UINTN        Index;
+  
+  if (mSkuId == 0xFFFF) {
+    mSkuId = (UINT16) LibPcdGetSku ();
+  }
+
+  //
+  // Find the DefaultId setting from the full DefaultSetting
+  //
+  VariableStorage = NULL;
+  Link = mVarStorageList.ForwardLink;
+  while (Link != &mVarStorageList) {
+    Entry = BASE_CR (Link, VARSTORAGE_DEFAULT_DATA, Entry);
+    if (Entry->DefaultId == DefaultId) {
+      VariableStorage = Entry->VariableStorage;
+      break;
+    }
+    Link = Link->ForwardLink;
+  }
+  
+  if (Link == &mVarStorageList) {
+    DataBuffer = (UINT8 *) PcdGetPtr (PcdNvStoreDefaultValueBuffer);
+    DataHeader = (DEFAULT_DATA *) DataBuffer;
+    //
+    // The first section data includes NV storage default setting. 
+    //
+    NvStoreBuffer  = (VARIABLE_STORE_HEADER *) (DataBuffer + sizeof (DataHeader->DataSize) + DataHeader->HeaderSize);
+    VariableStorage   = AllocatePool (NvStoreBuffer->Size);
+    ASSERT (VariableStorage != NULL);
+    CopyMem (VariableStorage, NvStoreBuffer, NvStoreBuffer->Size);
+
+    //
+    // Find the matched SkuId and DefaultId in the first section
+    //
+    IsFound = FALSE;
+    DefaultInfo    = &(DataHeader->DefaultInfo[0]);
+    BufferEnd      = (UINT8 *) DataHeader + sizeof (DataHeader->DataSize) + DataHeader->HeaderSize;
+    while ((UINT8 *) DefaultInfo < BufferEnd) {
+      if (DefaultInfo->DefaultId == DefaultId && DefaultInfo->SkuId == mSkuId) {
+        IsFound = TRUE;
+        break;
+      }
+      DefaultInfo ++;
+    }
+    //
+    // Find the matched SkuId and DefaultId in the remaining section
+    //
+    Index = ((DataHeader->DataSize & 0xFFFFFF) + 3) & (~3);
+    while (!IsFound && Index < mNvDefaultStoreSize && DataHeader->DataSize != 0xFFFF) {
+      DataHeader  = (DEFAULT_DATA *) (DataBuffer + Index);
+      DefaultInfo = &(DataHeader->DefaultInfo[0]);
+      BufferEnd   = (UINT8 *) DataHeader + sizeof (DataHeader->DataSize) + DataHeader->HeaderSize;
+      while ((UINT8 *) DefaultInfo < BufferEnd) {
+        if (DefaultInfo->DefaultId == DefaultId && DefaultInfo->SkuId == mSkuId) {
+          IsFound = TRUE;
+          break;
+        }
+        DefaultInfo ++;
+      }
+      if (IsFound) {
+        DeltaData = (DATA_DELTA *) BufferEnd;
+        BufferEnd = (UINT8 *) DataHeader + DataHeader->DataSize;
+        while ((UINT8 *) DeltaData < BufferEnd) {
+          *((UINT8 *) VariableStorage + DeltaData->Offset) = (UINT8) DeltaData->Value;
+          DeltaData ++;
+        }
+      }
+      Index = ((DataHeader->DataSize & 0xFFFFFF) + 3) & (~3);
+    }
+    //
+    // Cache the found result in VarStorageList
+    //
+    if (!IsFound) {
+      FreePool (VariableStorage);
+      VariableStorage = NULL;
+    }
+    Entry = AllocatePool (sizeof (VARSTORAGE_DEFAULT_DATA));
+    Entry->DefaultId = DefaultId;
+    Entry->VariableStorage = VariableStorage;
+    InsertTailList (&mVarStorageList, &Entry->Entry);
+  }
+  //
+  // The matched variable storage is not found.
+  //
+  if (VariableStorage == NULL) {
+    return EFI_NOT_FOUND;
+  }
+  
+  //
+  // Find the question default value from the variable storage
+  //
+  VariableHeader = FindVariableData (VariableStorage, &EfiVarStore->Guid, EfiVarStore->Attributes, (CHAR16 *) EfiVarStore->Name);
+  if (VariableHeader == NULL) {
+    return EFI_NOT_FOUND;
+  }
+  if (VariableHeader->DataSize < IfrQuestionHdr->VarStoreInfo.VarOffset + Width) {
+    return EFI_INVALID_PARAMETER;
+  }
+  
+  //
+  // Copy the question value
+  //
+  if (ValueBuffer != NULL) {
+    CopyMem (ValueBuffer, (UINT8 *) VariableHeader + sizeof (VARIABLE_HEADER) + VariableHeader->NameSize + IfrQuestionHdr->VarStoreInfo.VarOffset, Width);
+  }
+  
+  return EFI_SUCCESS;
+}
+
+/**
+  Update IFR default setting in Form Package
+
+  @param  Package                Form Package to be updated
+
+**/
+VOID
+UpdateDefaultSettingInFormPackage (
+  HII_IFR_PACKAGE_INSTANCE *FormPackage
+  )
+{
+  UINTN   IfrOffset;
+  UINTN   PackageLength;
+  EFI_IFR_VARSTORE_EFI     *IfrEfiVarStore;
+  EFI_IFR_OP_HEADER        *IfrOpHdr;
+  EFI_IFR_ONE_OF_OPTION    *IfrOneOfOption;
+  UINT8        IfrQuestionType;
+  UINT8        IfrScope;
+  EFI_IFR_QUESTION_HEADER  *IfrQuestionHdr;
+  EFI_IFR_VARSTORE_EFI     *EfiVarStoreList[BASE_NUMBER];
+  UINTN   EfiVarStoreMaxNum;
+  UINTN   EfiVarStoreNumber;
+  UINT16  DefaultIdList[BASE_NUMBER];
+  UINTN   DefaultIdNumber;
+  UINTN   DefaultIdMaxNum;
+  UINTN   Index;
+  UINTN   EfiVarStoreIndex;
+  UINT8   MaxContainers;
+  EFI_IFR_TYPE_VALUE IfrValue;
+  EFI_IFR_TYPE_VALUE IfrManufactValue;
+  BOOLEAN            StandardDefaultIsSet;
+  BOOLEAN            ManufactDefaultIsSet;
+  EFI_IFR_CHECKBOX   *IfrCheckBox;
+  EFI_STATUS         Status;
+  EFI_IFR_DEFAULT    *IfrDefault;
+  UINTN              Width;
+  EFI_IFR_QUESTION_HEADER VarStoreQuestionHeader;
+
+  //
+  // If no default setting, do nothing
+  //
+  if (mNvDefaultStoreSize == 0) {
+    mNvDefaultStoreSize = PcdGetSize (PcdNvStoreDefaultValueBuffer);
+  }
+  if (mNvDefaultStoreSize < sizeof (DEFAULT_DATA)) {
+    return;
+  }
+  
+  ZeroMem (&VarStoreQuestionHeader, sizeof (VarStoreQuestionHeader));
+  PackageLength = FormPackage->FormPkgHdr.Length - sizeof (EFI_HII_PACKAGE_HEADER);
+  IfrOffset     = 0;
+  IfrScope      = 0;
+  IfrOpHdr      = (EFI_IFR_OP_HEADER *) FormPackage->IfrData;
+  IfrQuestionHdr  = NULL;
+  EfiVarStoreMaxNum = BASE_NUMBER;
+  EfiVarStoreNumber = 0;
+  DefaultIdMaxNum   = BASE_NUMBER;
+  DefaultIdNumber   = 0;
+  StandardDefaultIsSet = FALSE;
+  ManufactDefaultIsSet = FALSE;
+  MaxContainers        = 0;
+  while (IfrOffset < PackageLength) {
+    switch (IfrOpHdr->OpCode) {
+    case EFI_IFR_VARSTORE_EFI_OP:
+      if (EfiVarStoreNumber >= EfiVarStoreMaxNum) {
+        //
+        // Reallocate EFI VarStore Buffer
+        //
+      }
+      IfrEfiVarStore = (EFI_IFR_VARSTORE_EFI *) IfrOpHdr;
+      //
+      // Convert VarStore Name from ASCII string to Unicode string.
+      //
+      EfiVarStoreList [EfiVarStoreNumber] = AllocatePool (IfrEfiVarStore->Header.Length + AsciiStrSize (IfrEfiVarStore->Name));
+      CopyMem (EfiVarStoreList [EfiVarStoreNumber], IfrEfiVarStore, IfrEfiVarStore->Header.Length);
+      AsciiStrToUnicodeStrS (IfrEfiVarStore->Name, (CHAR16 *) &(EfiVarStoreList [EfiVarStoreNumber]->Name[0]), AsciiStrSize (IfrEfiVarStore->Name) * sizeof (CHAR16));
+      Status = FindQuestionDefaultSetting (EFI_HII_DEFAULT_CLASS_STANDARD, EfiVarStoreList[EfiVarStoreNumber], &VarStoreQuestionHeader, NULL, IfrEfiVarStore->Size);
+      if (!EFI_ERROR (Status)) {
+        EfiVarStoreNumber ++;
+      } else {
+        FreePool (EfiVarStoreList [EfiVarStoreNumber]);
+        EfiVarStoreList [EfiVarStoreNumber] = NULL;
+      }
+      break;
+    case EFI_IFR_DEFAULTSTORE_OP:
+      if (DefaultIdNumber >= DefaultIdMaxNum) {
+        //
+        // Reallocate DefaultIdNumber
+        //
+      }
+      DefaultIdList[DefaultIdNumber ++] = ((EFI_IFR_DEFAULTSTORE *) IfrOpHdr)->DefaultId;
+	  break;
+    case EFI_IFR_FORM_OP:
+    case EFI_IFR_FORM_MAP_OP:
+      //
+      // No EFI varstore is found and directly return.
+      //
+      if (EfiVarStoreNumber == 0 || DefaultIdNumber == 0) {
+        goto Done;
+      }
+      break;
+    case EFI_IFR_CHECKBOX_OP:
+      IfrScope         = IfrOpHdr->Scope;
+      IfrQuestionType  = IfrOpHdr->OpCode;
+      IfrQuestionHdr   = (EFI_IFR_QUESTION_HEADER *) (IfrOpHdr + 1);
+      IfrCheckBox      = (EFI_IFR_CHECKBOX *) (IfrOpHdr + 1);
+      EfiVarStoreIndex = IsEfiVarStoreQuestion (IfrQuestionHdr, EfiVarStoreList, EfiVarStoreNumber);
+      if (EfiVarStoreIndex < EfiVarStoreNumber) {
+        for (Index = 0; Index < DefaultIdNumber; Index ++) {
+          if (DefaultIdList[Index] == EFI_HII_DEFAULT_CLASS_STANDARD) {
+            Status = FindQuestionDefaultSetting (DefaultIdList[Index], EfiVarStoreList[EfiVarStoreIndex], IfrQuestionHdr, &IfrValue, sizeof (BOOLEAN));
+            if (!EFI_ERROR (Status)) {
+              if (IfrValue.b) {
+                IfrCheckBox->Flags = IfrCheckBox->Flags | EFI_IFR_CHECKBOX_DEFAULT;
+              } else {
+                IfrCheckBox->Flags = IfrCheckBox->Flags & (~EFI_IFR_CHECKBOX_DEFAULT);
+              }
+            }
+          } else if (DefaultIdList[Index] == EFI_HII_DEFAULT_CLASS_MANUFACTURING) {
+            Status = FindQuestionDefaultSetting (DefaultIdList[Index], EfiVarStoreList[EfiVarStoreIndex], IfrQuestionHdr, &IfrValue, sizeof (BOOLEAN));
+            if (!EFI_ERROR (Status)) {
+              if (IfrValue.b) {
+                IfrCheckBox->Flags = IfrCheckBox->Flags | EFI_IFR_CHECKBOX_DEFAULT_MFG;
+              } else {
+                IfrCheckBox->Flags = IfrCheckBox->Flags & (~EFI_IFR_CHECKBOX_DEFAULT_MFG);
+              }
+            }
+          }
+        }
+      }
+      break;
+    case EFI_IFR_NUMERIC_OP:
+      IfrScope         = IfrOpHdr->Scope;
+      IfrQuestionType  = IfrOpHdr->OpCode;
+      IfrQuestionHdr   = (EFI_IFR_QUESTION_HEADER *) (IfrOpHdr + 1);
+      //
+      // Todo Check whether the default value is valid or not
+      //
+      break;
+    case EFI_IFR_ONE_OF_OP:
+      IfrScope         = IfrOpHdr->Scope;
+      IfrQuestionType  = IfrOpHdr->OpCode;
+      IfrQuestionHdr   = (EFI_IFR_QUESTION_HEADER *) (IfrOpHdr + 1);
+      Width            = 1 << (((EFI_IFR_ONE_OF *) IfrOpHdr)->Flags & EFI_IFR_NUMERIC_SIZE);
+      EfiVarStoreIndex = IsEfiVarStoreQuestion (IfrQuestionHdr, EfiVarStoreList, EfiVarStoreNumber);
+      StandardDefaultIsSet = FALSE;
+      ManufactDefaultIsSet = FALSE;
+      //
+      // Find Default and Manufacturing default for OneOf question
+      //
+      if (EfiVarStoreIndex < EfiVarStoreNumber) {
+        for (Index = 0; Index < DefaultIdNumber; Index ++) {
+          if (DefaultIdList[Index] == EFI_HII_DEFAULT_CLASS_STANDARD) {
+            Status = FindQuestionDefaultSetting (EFI_HII_DEFAULT_CLASS_STANDARD, EfiVarStoreList[EfiVarStoreIndex], IfrQuestionHdr, &IfrValue, Width);
+            if (!EFI_ERROR (Status)) {
+              StandardDefaultIsSet = TRUE;
+            }
+          } else if (DefaultIdList[Index] == EFI_HII_DEFAULT_CLASS_MANUFACTURING) {
+            Status = FindQuestionDefaultSetting (EFI_HII_DEFAULT_CLASS_MANUFACTURING, EfiVarStoreList[EfiVarStoreIndex], IfrQuestionHdr, &IfrManufactValue, Width);
+            if (!EFI_ERROR (Status)) {
+              ManufactDefaultIsSet = TRUE;
+            }
+          }
+        }
+      }
+      break;
+    case EFI_IFR_ORDERED_LIST_OP:
+      IfrScope         = IfrOpHdr->Scope;
+      IfrQuestionType  = IfrOpHdr->OpCode;
+      IfrQuestionHdr   = (EFI_IFR_QUESTION_HEADER *) (IfrOpHdr + 1);
+      MaxContainers    = ((EFI_IFR_ORDERED_LIST *) IfrOpHdr)->MaxContainers;
+      break;
+    case EFI_IFR_ONE_OF_OPTION_OP:
+      if (IfrQuestionHdr != NULL && IfrScope > 0) {
+        IfrOneOfOption = (EFI_IFR_ONE_OF_OPTION *) IfrOpHdr;
+        if (IfrQuestionType == EFI_IFR_ONE_OF_OP) {
+          if (StandardDefaultIsSet) {
+            if (CompareMem (&IfrOneOfOption->Value, &IfrValue, Width) == 0) {
+              IfrOneOfOption->Flags |= EFI_IFR_OPTION_DEFAULT;
+            } else {
+              IfrOneOfOption->Flags &= ~EFI_IFR_OPTION_DEFAULT;
+            }
+          }
+          if (ManufactDefaultIsSet) {
+            if (CompareMem (&IfrOneOfOption->Value, &IfrManufactValue, Width) == 0) {
+              IfrOneOfOption->Flags |= EFI_IFR_OPTION_DEFAULT_MFG;
+            } else {
+              IfrOneOfOption->Flags &= ~EFI_IFR_OPTION_DEFAULT_MFG;
+            }
+          }
+        }
+
+        if (IfrQuestionType == EFI_IFR_ORDERED_LIST_OP) {
+          if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_8 || IfrDefault->Type == EFI_IFR_TYPE_BOOLEAN) {
+            Width = 1;
+          } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_16) {
+            Width = 2;
+          } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_32) {
+            Width = 4;
+          } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_64) {
+            Width = 8;
+          }
+        }
+      }
+      break;
+    case EFI_IFR_DEFAULT_OP:
+      if (IfrQuestionHdr != NULL && IfrScope > 0) {
+        IfrDefault = (EFI_IFR_DEFAULT *) IfrOpHdr;
+        //
+        // Collect default value width
+        //
+        Width = 0;
+        if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_8 || IfrDefault->Type == EFI_IFR_TYPE_BOOLEAN) {
+          Width = 1;
+        } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_16) {
+          Width = 2;
+        } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_32) {
+          Width = 4;
+        } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_64) {
+          Width = 8;
+        } else if (IfrDefault->Type == EFI_IFR_TYPE_BUFFER) {
+          Width = IfrDefault->Header.Length - OFFSET_OF (EFI_IFR_DEFAULT, Value);
+        }
+        //
+        // Update the default value
+        //
+        if (Width > 0) {
+          EfiVarStoreIndex = IsEfiVarStoreQuestion (IfrQuestionHdr, EfiVarStoreList, EfiVarStoreNumber);
+          if (EfiVarStoreIndex < EfiVarStoreNumber) {
+            Status = FindQuestionDefaultSetting (IfrDefault->DefaultId, EfiVarStoreList[EfiVarStoreIndex], IfrQuestionHdr, &IfrDefault->Value, Width);
+          }
+        }
+      }
+      break;
+    case EFI_IFR_END_OP:
+      if (IfrQuestionHdr != NULL) {
+        if (IfrScope > 0) {
+          IfrScope --;
+        }
+        if (IfrScope == 0) {
+          IfrQuestionHdr = NULL;
+        }
+      }
+      break;
+    default:
+      break;
+    }
+    IfrOffset = IfrOffset + IfrOpHdr->Length;
+    IfrOpHdr  = (EFI_IFR_OP_HEADER *) ((UINT8 *) IfrOpHdr + IfrOpHdr->Length);
+    if (IfrScope > 0) {
+      IfrScope += IfrOpHdr->Scope;
+    }
+  }
+
+Done:
+  for (Index = 0; Index < EfiVarStoreNumber; Index ++) {
+    FreePool (EfiVarStoreList [Index]);
+  }
+  return;
+}
 
 /**
   This function insert a Form package to a package list node.
@@ -600,6 +1070,11 @@ InsertFormPackage (
 
   InsertTailList (&PackageList->FormPkgHdr, &FormPackage->IfrEntry);
   *Package = FormPackage;
+  
+  //
+  // Update FormPackage with the default setting
+  //
+  UpdateDefaultSettingInFormPackage (FormPackage);
 
   if (NotifyType == EFI_HII_DATABASE_NOTIFY_ADD_PACK) {
     PackageList->PackageListHdr.PackageLength += FormPackage->FormPkgHdr.Length;

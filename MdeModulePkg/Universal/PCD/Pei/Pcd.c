@@ -130,6 +130,105 @@ EFI_PEI_PPI_DESCRIPTOR  mPpiList2[] = {
 };
 
 /**
+  Callback on SET PcdSetNvStoreDefaultId
+
+  Once PcdSetNvStoreDefaultId is set, the default NV storage will be found from 
+  PcdNvStoreDefaultValueBuffer, and built into VariableHob.
+
+  @param[in]      CallBackGuid  The PCD token GUID being set.
+  @param[in]      CallBackToken The PCD token number being set.
+  @param[in, out] TokenData     A pointer to the token data being set.
+  @param[in]      TokenDataSize The size, in bytes, of the data being set.
+
+  @retval VOID
+
+**/
+VOID
+EFIAPI
+PcdSetNvStoreDefaultIdCallBack (
+  IN CONST EFI_GUID         *CallBackGuid, OPTIONAL
+  IN       UINTN            CallBackToken,
+  IN OUT   VOID             *TokenData,
+  IN       UINTN            TokenDataSize
+  )
+{
+  EFI_STATUS Status;
+  UINT16     DefaultId;
+  UINT16     SkuId;
+  UINTN      FullSize;
+  UINTN      Index;
+  UINT8      *DataBuffer;
+  UINT8        *VarStoreHobData;
+  DEFAULT_DATA *DataHeader;
+  DEFAULT_INFO *DefaultInfo;
+  DATA_DELTA   *DeltaData;
+  UINT8        *BufferEnd;
+  BOOLEAN      IsFound;
+  VARIABLE_STORE_HEADER *NvStoreBuffer;
+  
+  DefaultId = *(UINT16 *) TokenData;
+  SkuId     = (UINT16) GetPcdDatabase()->SystemSkuId;
+  IsFound   = FALSE;
+  
+  if (PeiPcdGetSizeEx (&gEfiMdeModulePkgTokenSpaceGuid, PcdToken (PcdNvStoreDefaultValueBuffer)) > sizeof (DEFAULT_DATA)) {
+    FullSize   =  PeiPcdGetSizeEx (&gEfiMdeModulePkgTokenSpaceGuid, PcdToken (PcdNvStoreDefaultValueBuffer));
+    DataBuffer = (UINT8 *) PeiPcdGetPtrEx (&gEfiMdeModulePkgTokenSpaceGuid, PcdToken (PcdNvStoreDefaultValueBuffer));
+    DataHeader = (DEFAULT_DATA *) DataBuffer;
+    //
+    // The first section data includes NV storage default setting. 
+    //
+    NvStoreBuffer   = (VARIABLE_STORE_HEADER *) (DataBuffer + sizeof (DataHeader->DataSize) + DataHeader->HeaderSize);
+    VarStoreHobData = (UINT8 *) BuildGuidHob (&NvStoreBuffer->Signature, NvStoreBuffer->Size);
+    ASSERT (VarStoreHobData != NULL);
+    CopyMem (VarStoreHobData, NvStoreBuffer, NvStoreBuffer->Size);
+    //
+    // Find the matched SkuId and DefaultId in the first section
+    //
+    DefaultInfo    = &(DataHeader->DefaultInfo[0]);
+    BufferEnd      = (UINT8 *) DataHeader + sizeof (DataHeader->DataSize) + DataHeader->HeaderSize;
+    while ((UINT8 *) DefaultInfo < BufferEnd) {
+      if (DefaultInfo->DefaultId == DefaultId && DefaultInfo->SkuId == SkuId) {
+        IsFound = TRUE;
+        break;
+      }
+      DefaultInfo ++;
+    }
+    //
+    // Find the matched SkuId and DefaultId in the remaining section
+    //
+    Index = ((DataHeader->DataSize & 0xFFFFFF) + 3) & (~3);
+    while (!IsFound && Index < FullSize && DataHeader->DataSize != 0xFFFFFFFF) {
+      DataHeader  = (DEFAULT_DATA *) (DataBuffer + Index);
+      DefaultInfo = &(DataHeader->DefaultInfo[0]);
+      BufferEnd   = (UINT8 *) DataHeader + sizeof (DataHeader->DataSize) + DataHeader->HeaderSize;
+      while ((UINT8 *) DefaultInfo < BufferEnd) {
+        if (DefaultInfo->DefaultId == DefaultId && DefaultInfo->SkuId == SkuId) {
+          IsFound = TRUE;
+          break;
+        }
+        DefaultInfo ++;
+      }
+      if (IsFound) {
+        DeltaData = (DATA_DELTA *) BufferEnd;
+        BufferEnd = (UINT8 *) DataHeader + DataHeader->DataSize;
+        while ((UINT8 *) DeltaData < BufferEnd) {
+          *(VarStoreHobData + DeltaData->Offset) = (UINT8) DeltaData->Value;
+          DeltaData ++;
+        }
+      }
+      Index = ((DataHeader->DataSize & 0xFFFFFF) + 3) & (~3);
+    }
+  }
+
+  Status = PcdUnRegisterCallBackOnSet ( 
+             &gEfiMdeModulePkgTokenSpaceGuid, 
+             PcdToken(PcdSetNvStoreDefaultId), 
+             PcdSetNvStoreDefaultIdCallBack
+             );
+  ASSERT_EFI_ERROR (Status);
+}
+
+/**
   Main entry for PCD PEIM driver.
   
   This routine initialize the PCD database for PEI phase and install PCD_PPI/EFI_PEI_PCD_PPI.
@@ -163,6 +262,13 @@ PcdPeimInit (
   Status = PeiServicesInstallPpi (&mPpiList2[0]);
   ASSERT_EFI_ERROR (Status);
 
+  Status = PeiRegisterCallBackOnSet (
+             &gEfiMdeModulePkgTokenSpaceGuid, 
+             PcdToken(PcdSetNvStoreDefaultId), 
+             PcdSetNvStoreDefaultIdCallBack
+             );
+  ASSERT_EFI_ERROR (Status);
+  
   return Status;
 }
 

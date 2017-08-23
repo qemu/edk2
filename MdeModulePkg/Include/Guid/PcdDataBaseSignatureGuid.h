@@ -146,5 +146,33 @@ typedef struct {
   DXE_PCD_DATABASE  *DxeDb;
 } PCD_DATABASE;
 
+#pragma pack(1)
+
+typedef struct {
+  UINT16 DefaultId;
+  UINT16 SkuId;
+} DEFAULT_INFO;
+
+typedef struct {
+  UINT32 Offset:24;
+  UINT32 Value:8;
+} DATA_DELTA;
+
+typedef struct {
+  UINT32 DataSize; // full size, it must be at 4 byte alignment. 
+  //
+  // HeaderSize includes HeaderSize fields and DefaultInfo arrays
+  //
+  UINT32 HeaderSize;
+  //
+  // DefaultInfo arrays those have the same default setting.
+  //
+  DEFAULT_INFO DefaultInfo[1];
+  //
+  // Default data is stored as variable storage or the array of DATA_DELTA. 
+  //
+} DEFAULT_DATA;
+
+#pragma pack()
 
 #endif
