@@ -1,7 +1,7 @@
 ## @file
 # This file is used to define each component of the build database
 #
-# Copyright (c) 2007 - 2015, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2017, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -161,6 +161,7 @@ class StructurePcd(PcdClassObject):
             self.PackageDecs = PcdObject.PackageDecs if PcdObject.PackageDecs else self.PackageDecs 
             self.DefaultValues = PcdObject.DefaultValues if PcdObject.DefaultValues else self.DefaultValues
             self.PcdMode = PcdObject.PcdMode if PcdObject.PcdMode else self.PcdMode
+            self.DefaultFromDSC=None
             self.OverrideValues = PcdObject.SkuOverrideValues if PcdObject.SkuOverrideValues else self.SkuOverrideValues
             self.FlexibleFieldName = PcdObject.FlexibleFieldName if PcdObject.FlexibleFieldName else self.FlexibleFieldName
 

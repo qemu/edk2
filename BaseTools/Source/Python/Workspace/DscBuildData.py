@@ -906,10 +906,13 @@ class DscBuildData(PlatformBuildClassObject):
         for str_pcd in StrPcdSet:
             str_pcd_obj = Pcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
             str_pcd_dec = self._DecPcds.get((str_pcd.split(".")[1], str_pcd.split(".")[0]), None)
-            if str_pcd_obj and str_pcd_dec:
+            if str_pcd_dec:
                 str_pcd_obj_str = StructurePcd()
                 str_pcd_obj_str.copy(str_pcd_dec)
-                str_pcd_obj_str.copy(str_pcd_obj)
+                if str_pcd_obj:
+                    str_pcd_obj_str.copy(str_pcd_obj)
+                    if str_pcd_obj.DefaultValue:
+                        str_pcd_obj_str.DefaultFromDSC = str_pcd_obj.DefaultValue
                 for str_pcd_data in StrPcdSet[str_pcd]:
                     if str_pcd_data[2] in SkuObj.SkuIdSet:
                         str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]), 'DEFAULT' if str_pcd_data[2] == 'COMMON' else str_pcd_data[2],self.MetaFile.File,LineNo=str_pcd_data[3])
@@ -1147,7 +1150,7 @@ class DscBuildData(PlatformBuildClassObject):
                                 Value, ValueSize = ParseFieldValue (FieldList[FieldName.strip(".")][0])
                                 CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d / __ARRAY_ELEMENT_SIZE(%s, %s));\n' % (Pcd.DatumType, FieldName.strip("."), ValueSize, Pcd.DatumType, FieldName.strip("."));
                                 CApp = CApp + '  printf("Size = %d\\n", Size);\n'
-                            else:  
+                            else:
                                 NewFieldName = ''
                                 while '[' in  FieldName:
                                     NewFieldName = NewFieldName + FieldName.split('[', 1)[0] + '[0]'
@@ -1156,12 +1159,8 @@ class DscBuildData(PlatformBuildClassObject):
                                 FieldName = NewFieldName + FieldName
                                 while '[' in FieldName:
                                     FieldName = FieldName.rsplit('[', 1)[0]
-                                    # if not self.args.Quiet:
-                                    #  print 'PCD Field: %40s' % (FieldName)
-                                    if Pcd.DatumType + FieldName not in FieldNames:
-                                        FieldNames[Pcd.DatumType + FieldName] = True
-                                        CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d);\n' % (Pcd.DatumType, FieldName.strip("."), ArrayIndex + 1)
-                                        CApp = CApp + '  printf("Size = %d\\n", Size);\n'
+                                    CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d);\n' % (Pcd.DatumType, FieldName.strip("."), ArrayIndex + 1)
+                                    CApp = CApp + '  printf("Size = %d\\n", Size);\n'
                     CApp = CApp + '  printf("Size = %d\\n", Size);\n'
             
                     #
@@ -1182,7 +1181,22 @@ class DscBuildData(PlatformBuildClassObject):
                     #
                     # Assign field values in PCD
                     #
-                    for FieldList in [Pcd.DefaultValues, OverrideValues]:
+                    for FieldList in [Pcd.DefaultValues, Pcd.DefaultFromDSC, OverrideValues]:
+                        if not FieldList:
+                            continue
+                        if Pcd.DefaultFromDSC and FieldList == Pcd.DefaultFromDSC:
+                            IsArray = self.IsFieldValueAnArray(FieldList)
+                            Value, ValueSize = ParseFieldValue (FieldList)
+                            if isinstance(Value, str):
+                                CApp = CApp + '  Pcd = %s; // From DSC Default Value %s\n' % (Value, Pcd.DefaultFromDSC)
+                            elif IsArray:
+                                #
+                                # Use memcpy() to copy value into field
+                                #
+                                CApp = CApp + '  Value     = %s; // From DSC Default Value %s\n' % (self.IntToCString(Value, ValueSize), Pcd.DefaultFromDSC)
+                                CApp = CApp + '  memcpy (Pcd, Value, %d);\n' % (ValueSize)
+                            continue
+
                         for FieldName in FieldList:
         #                     if not FieldName.startswith('.'):
         #                         InitByteValue = InitByteValue + '%s\n' % (FieldList[FieldName][0])
