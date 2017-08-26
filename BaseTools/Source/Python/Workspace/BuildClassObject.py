@@ -109,7 +109,7 @@ class StructurePcd(PcdClassObject):
         super(StructurePcd, self).__init__(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided, GuidValue, validateranges, validlists, expressions)
         self.StructuredPcdIncludeFile = StructuredPcdIncludeFile
         self.PackageDecs = Packages
-        self.DefaultStoreName = ['DEFAULT']
+        self.DefaultStoreName = ['STANDARD']
         self.DefaultValues = collections.OrderedDict({})
         self.PcdMode = None
         self.SkuOverrideValues = collections.OrderedDict({})

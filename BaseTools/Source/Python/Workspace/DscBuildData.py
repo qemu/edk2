@@ -917,6 +917,20 @@ class DscBuildData(PlatformBuildClassObject):
                     if str_pcd_data[2] in SkuObj.SkuIdSet:
                         str_pcd_obj_str.AddOverrideValue(str_pcd_data[0], str(str_pcd_data[4]), 'DEFAULT' if str_pcd_data[2] == 'COMMON' else str_pcd_data[2],self.MetaFile.File,LineNo=str_pcd_data[3])
                 S_pcd_set[str_pcd.split(".")[1], str_pcd.split(".")[0]] = str_pcd_obj_str
+        # Add the Structure PCD that only defined in DEC, don't have override in DSC file
+        for Pcd in self._DecPcds:
+            if type (self._DecPcds[Pcd]) is StructurePcd:
+                if Pcd not in S_pcd_set:
+                    str_pcd_obj_str = StructurePcd()
+                    str_pcd_obj_str.copy(self._DecPcds[Pcd])
+                    str_pcd_obj = Pcds.get(Pcd, None)
+                    if str_pcd_obj:
+                        str_pcd_obj_str.copy(str_pcd_obj)
+                        if str_pcd_obj.DefaultValue:
+                            str_pcd_obj_str.DefaultFromDSC = str_pcd_obj.DefaultValue
+                    S_pcd_set[Pcd] = str_pcd_obj_str
+        if S_pcd_set:
+            GlobalData.gStructurePcd[self.Arch] = S_pcd_set
         Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
         if Str_Pcd_Values:
             for item in Str_Pcd_Values:
@@ -1081,8 +1095,132 @@ class DscBuildData(PlatformBuildClassObject):
                 Result = Result + '\\x%02x' % (Value & 0xff)
                 Value = Value >> 8
         Result = Result + '"'
-        return Result  
+        return Result
     
+    def GenerateInitializeFunc(self, SkuName, DefaultStoreName, Pcd, InitByteValue, CApp): 
+        OverrideValues = None
+        if Pcd.SkuOverrideValues:
+            OverrideValues = Pcd.SkuOverrideValues[SkuName]
+        CApp = CApp + 'void\n'
+        CApp = CApp + 'Initialize_%s_%s_%s_%s(\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
+        CApp = CApp + '  void\n'
+        CApp = CApp + '  )\n'
+        CApp = CApp + '{\n'
+        CApp = CApp + '  UINT32  Size;\n'
+        CApp = CApp + '  UINT32  FieldSize;\n'
+        CApp = CApp + '  UINT8   *Value;\n'
+        CApp = CApp + '  UINT32  OriginalSize;\n'
+        CApp = CApp + '  VOID    *OriginalPcd;\n'
+        CApp = CApp + '  %s  *Pcd;\n' % (Pcd.DatumType)
+        CApp = CApp + '\n'
+        InitByteValue += '%s.%s.%s.%s|%s|%s\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName, Pcd.DatumType, Pcd.DefaultValue)
+
+        #
+        # Get current PCD value and size
+        #
+        CApp = CApp + '  OriginalPcd = PcdGetPtr (%s, %s, %s, %s, &OriginalSize);\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
+        CApp = CApp + '  printf("OriginalSize = %d\\n", OriginalSize);\n'
+
+
+        #
+        # Determine the size of the PCD.  For simple structures, sizeof(TYPE) provides
+        # the correct value.  For structures with a flexible array member, the flexible
+        # array member is detected, and the size is based on the highest index used with
+        # the flexible array member.  The flexible array member must be the last field
+        # in a structure.  The size formula for this case is: 
+        # OFFSET_OF(FlexbleArrayField) + sizeof(FlexibleArray[0]) * (HighestIndex + 1)
+        #
+        CApp = CApp + '  Size = sizeof(%s);\n' % (Pcd.DatumType)
+        CApp = CApp + '  printf("Size = %d\\n", Size);\n'
+        for FieldList in [Pcd.DefaultValues, OverrideValues]:
+            if not FieldList:
+                continue
+            for FieldName in FieldList:
+                FieldName = "." + FieldName
+                IsArray = self.IsFieldValueAnArray(FieldList[FieldName.strip(".")][0])
+                if IsArray:
+                    Value, ValueSize = ParseFieldValue (FieldList[FieldName.strip(".")][0])
+                    CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d / __ARRAY_ELEMENT_SIZE(%s, %s));\n' % (Pcd.DatumType, FieldName.strip("."), ValueSize, Pcd.DatumType, FieldName.strip("."));
+                    CApp = CApp + '  printf("Size = %d\\n", Size);\n'
+                else:
+                    NewFieldName = ''
+                    while '[' in  FieldName:
+                        NewFieldName = NewFieldName + FieldName.split('[', 1)[0] + '[0]'
+                        ArrayIndex = int(FieldName.split('[', 1)[1].split(']', 1)[0])
+                        FieldName = FieldName.split(']', 1)[1]
+                    FieldName = NewFieldName + FieldName
+                    while '[' in FieldName:
+                        FieldName = FieldName.rsplit('[', 1)[0]
+                        CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d);\n' % (Pcd.DatumType, FieldName.strip("."), ArrayIndex + 1)
+                        CApp = CApp + '  printf("Size = %d\\n", Size);\n'
+        CApp = CApp + '  printf("Size = %d\\n", Size);\n'
+
+        #
+        # Allocate and zero buffer for the PCD
+        # Must handle cases where current value is smaller, larger, or same size
+        # Always keep that larger one as the current size
+        #
+        CApp = CApp + '  Size = (OriginalSize > Size ? OriginalSize : Size);\n'
+        CApp = CApp + '  printf("Size = %d\\n", Size);\n'
+        CApp = CApp + '  Pcd     = (%s *)malloc (Size);\n' % (Pcd.DatumType)
+        CApp = CApp + '  memset (Pcd, 0, Size);\n'
+
+        #
+        # Copy current PCD value into allocated buffer.
+        #
+        CApp = CApp + '  memcpy (Pcd, OriginalPcd, OriginalSize);\n'
+
+        #
+        # Assign field values in PCD
+        #
+        for FieldList in [Pcd.DefaultValues, Pcd.DefaultFromDSC, OverrideValues]:
+            if not FieldList:
+                continue
+            if Pcd.DefaultFromDSC and FieldList == Pcd.DefaultFromDSC:
+                IsArray = self.IsFieldValueAnArray(FieldList)
+                Value, ValueSize = ParseFieldValue (FieldList)
+                if isinstance(Value, str):
+                    CApp = CApp + '  Pcd = %s; // From DSC Default Value %s\n' % (Value, Pcd.DefaultFromDSC)
+                elif IsArray:
+                    #
+                    # Use memcpy() to copy value into field
+                    #
+                    CApp = CApp + '  Value     = %s; // From DSC Default Value %s\n' % (self.IntToCString(Value, ValueSize), Pcd.DefaultFromDSC)
+                    CApp = CApp + '  memcpy (Pcd, Value, %d);\n' % (ValueSize)
+                continue
+
+            for FieldName in FieldList:
+                IsArray = self.IsFieldValueAnArray(FieldList[FieldName][0])
+                Value, ValueSize = ParseFieldValue (FieldList[FieldName][0])
+                if isinstance(Value, str):
+                    CApp = CApp + '  Pcd->%s = %s; // From %s Line %d Value %s\n' % (FieldName, Value, FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
+                elif IsArray:
+                    #
+                    # Use memcpy() to copy value into field
+                    #
+                    CApp = CApp + '  FieldSize = __FIELD_SIZE(%s, %s);\n' % (Pcd.DatumType, FieldName)
+                    CApp = CApp + '  printf("FieldSize = %d\\n", FieldSize);\n'
+                    CApp = CApp + '  Value     = %s; // From %s Line %d Value %s\n' % (self.IntToCString(Value, ValueSize), FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
+                    CApp = CApp + '  memcpy (&Pcd->%s[0], Value, (FieldSize > 0 && FieldSize < %d) ? FieldSize : %d);\n' % (FieldName, ValueSize, ValueSize)
+                else:
+                    if ValueSize > 4:
+                        CApp = CApp + '  Pcd->%s = %dULL; // From %s Line %d Value %s\n' % (FieldName, Value, FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
+                    else:
+                        CApp = CApp + '  Pcd->%s = %d; // From %s Line %d Value %s\n' % (FieldName, Value, FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
+
+        #
+        # Set new PCD value and size
+        #
+        CApp = CApp + '  PcdSetPtr (%s, %s, %s, %s, Size, (UINT8 *)Pcd);\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
+
+        #
+        # Free PCD
+        #
+        CApp = CApp + '  free (Pcd);\n'
+        CApp = CApp + '}\n'
+        CApp = CApp + '\n'
+        return InitByteValue, CApp
+
     def GenerateByteArrayValue (self, StructuredPcds):
         #
         # Generate/Compile/Run C application to determine if there are any flexible array members
@@ -1101,147 +1239,29 @@ class DscBuildData(PlatformBuildClassObject):
                 Includes[IncludeFile] = True
                 CApp = CApp + '#include <%s>\n' % (IncludeFile)
         CApp = CApp + '\n'
-          
-        FieldNames = {}
+
         for PcdName in StructuredPcds:
             Pcd = StructuredPcds[PcdName]
-            for SkuName in Pcd.SkuOverrideValues:
-                OverrideValues = Pcd.SkuOverrideValues[SkuName]
-                for DefaultStoreName in Pcd.DefaultStoreName:
-                    Pcd = StructuredPcds[PcdName]
-                    CApp = CApp + 'void\n'
-                    CApp = CApp + 'Initialize_%s_%s_%s_%s(\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
-                    CApp = CApp + '  void\n'
-                    CApp = CApp + '  )\n'
-                    CApp = CApp + '{\n'
-                    CApp = CApp + '  UINT32  Size;\n'
-                    CApp = CApp + '  UINT32  FieldSize;\n'
-                    CApp = CApp + '  UINT8   *Value;\n'
-                    CApp = CApp + '  %s      *Pcd;\n' % (Pcd.DatumType)
-                    CApp = CApp + '  UINT32  OriginalSize;\n'
-                    CApp = CApp + '  VOID    *OriginalPcd;\n'
-                    CApp = CApp + '\n'
-                    InitByteValue += '%s.%s.%s.%s|%s|%s\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName, Pcd.DatumType, Pcd.DefaultValue)
-                    
-                    #
-                    # Get current PCD value and size
-                    #
-                    CApp = CApp + '  OriginalPcd = PcdGetPtr (%s, %s, %s, %s, &OriginalSize);\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
-                    CApp = CApp + '  printf("OriginalSize = %d\\n", OriginalSize);\n'
-                    
-                    
-                    #
-                    # Determine the size of the PCD.  For simple structures, sizeof(TYPE) provides
-                    # the correct value.  For structures with a flexible array member, the flexible
-                    # array member is detected, and the size is based on the highest index used with
-                    # the flexible array member.  The flexible array member must be the last field
-                    # in a structure.  The size formula for this case is: 
-                    # OFFSET_OF(FlexbleArrayField) + sizeof(FlexibleArray[0]) * (HighestIndex + 1)
-                    #
-                    CApp = CApp + '  Size = sizeof(%s);\n' % (Pcd.DatumType)
-                    CApp = CApp + '  printf("Size = %d\\n", Size);\n'
-                    for FieldList in [Pcd.DefaultValues, OverrideValues]:
-                        for FieldName in FieldList:
-        #                     if not FieldName.startswith('.'):
-        #                         continue
-                            FieldName = "." + FieldName
-                            IsArray = self.IsFieldValueAnArray(FieldList[FieldName.strip(".")][0])
-                            if IsArray:
-                                Value, ValueSize = ParseFieldValue (FieldList[FieldName.strip(".")][0])
-                                CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d / __ARRAY_ELEMENT_SIZE(%s, %s));\n' % (Pcd.DatumType, FieldName.strip("."), ValueSize, Pcd.DatumType, FieldName.strip("."));
-                                CApp = CApp + '  printf("Size = %d\\n", Size);\n'
-                            else:
-                                NewFieldName = ''
-                                while '[' in  FieldName:
-                                    NewFieldName = NewFieldName + FieldName.split('[', 1)[0] + '[0]'
-                                    ArrayIndex = int(FieldName.split('[', 1)[1].split(']', 1)[0])
-                                    FieldName = FieldName.split(']', 1)[1]
-                                FieldName = NewFieldName + FieldName
-                                while '[' in FieldName:
-                                    FieldName = FieldName.rsplit('[', 1)[0]
-                                    CApp = CApp + '  __FLEXIBLE_SIZE(Size, %s, %s, %d);\n' % (Pcd.DatumType, FieldName.strip("."), ArrayIndex + 1)
-                                    CApp = CApp + '  printf("Size = %d\\n", Size);\n'
-                    CApp = CApp + '  printf("Size = %d\\n", Size);\n'
-            
-                    #
-                    # Allocate and zero buffer for the PCD
-                    # Must handle cases where current value is smaller, larger, or same size
-                    # Always keep that larger one as the current size
-                    #
-                    CApp = CApp + '  Size = (OriginalSize > Size ? OriginalSize : Size);\n'
-                    CApp = CApp + '  printf("Size = %d\\n", Size);\n'
-                    CApp = CApp + '  Pcd     = (%s *)malloc (Size);\n' % (Pcd.DatumType)
-                    CApp = CApp + '  memset (Pcd, 0, Size);\n'
-                    
-                    #
-                    # Copy current PCD value into allocated buffer.
-                    #
-                    CApp = CApp + '  memcpy (Pcd, OriginalPcd, OriginalSize);\n'
-            
-                    #
-                    # Assign field values in PCD
-                    #
-                    for FieldList in [Pcd.DefaultValues, Pcd.DefaultFromDSC, OverrideValues]:
-                        if not FieldList:
-                            continue
-                        if Pcd.DefaultFromDSC and FieldList == Pcd.DefaultFromDSC:
-                            IsArray = self.IsFieldValueAnArray(FieldList)
-                            Value, ValueSize = ParseFieldValue (FieldList)
-                            if isinstance(Value, str):
-                                CApp = CApp + '  Pcd = %s; // From DSC Default Value %s\n' % (Value, Pcd.DefaultFromDSC)
-                            elif IsArray:
-                                #
-                                # Use memcpy() to copy value into field
-                                #
-                                CApp = CApp + '  Value     = %s; // From DSC Default Value %s\n' % (self.IntToCString(Value, ValueSize), Pcd.DefaultFromDSC)
-                                CApp = CApp + '  memcpy (Pcd, Value, %d);\n' % (ValueSize)
-                            continue
+            if not Pcd.SkuOverrideValues:
+                InitByteValue, CApp = self.GenerateInitializeFunc('DEFAULT', 'STANDARD', Pcd, InitByteValue, CApp)
+            else:
+                for SkuName in Pcd.SkuOverrideValues:
+                    for DefaultStoreName in Pcd.DefaultStoreName:
+                        Pcd = StructuredPcds[PcdName]
+                        InitByteValue, CApp = self.GenerateInitializeFunc(SkuName, DefaultStoreName, Pcd, InitByteValue, CApp)
 
-                        for FieldName in FieldList:
-        #                     if not FieldName.startswith('.'):
-        #                         InitByteValue = InitByteValue + '%s\n' % (FieldList[FieldName][0])
-        #                         continue
-                            IsArray = self.IsFieldValueAnArray(FieldList[FieldName][0])
-                            Value, ValueSize = ParseFieldValue (FieldList[FieldName][0])
-                            # print FieldName, Value, ValueSize, IntToCString(Value, ValueSize)
-                            if isinstance(Value, str):
-                                CApp = CApp + '  Pcd->%s = %s; // From %s Line %d Value %s\n' % (FieldName, Value, FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
-                            elif IsArray:
-                                #
-                                # Use memcpy() to copy value into field
-                                #
-                                CApp = CApp + '  FieldSize = __FIELD_SIZE(%s, %s);\n' % (Pcd.DatumType, FieldName)
-                                CApp = CApp + '  printf("FieldSize = %d\\n", FieldSize);\n'
-                                CApp = CApp + '  Value     = %s; // From %s Line %d Value %s\n' % (self.IntToCString(Value, ValueSize), FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
-                                CApp = CApp + '  memcpy (&Pcd->%s[0], Value, (FieldSize > 0 && FieldSize < %d) ? FieldSize : %d);\n' % (FieldName, ValueSize, ValueSize)
-                            else:
-                                if ValueSize > 4:
-                                    CApp = CApp + '  Pcd->%s = %dULL; // From %s Line %d Value %s\n' % (FieldName, Value, FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
-                                else:
-                                    CApp = CApp + '  Pcd->%s = %d; // From %s Line %d Value %s\n' % (FieldName, Value, FieldList[FieldName][1], FieldList[FieldName][2], FieldList[FieldName][0])
-                    
-                    #
-                    # Set new PCD value and size
-                    #
-                    CApp = CApp + '  PcdSetPtr (%s, %s, %s, %s, Size, (UINT8 *)Pcd);\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
-                    
-                    #
-                    # Free PCD
-                    #
-                    CApp = CApp + '  free (Pcd);\n'
-                    
-                    CApp = CApp + '}\n'
-                    CApp = CApp + '\n'
-    
         CApp = CApp + 'VOID\n'
         CApp = CApp + 'PcdEntryPoint(\n'
         CApp = CApp + '  VOID\n'
         CApp = CApp + '  )\n'
         CApp = CApp + '{\n'
         for Pcd in StructuredPcds.values():
-            for SkuName in Pcd.SkuOverrideValues:
-                for DefaultStoreName in Pcd.DefaultStoreName:
-                    CApp = CApp + '  Initialize_%s_%s_%s_%s();\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
+            if not Pcd.SkuOverrideValues:
+                CApp = CApp + '  Initialize_%s_%s_%s_%s();\n' % ('DEFAULT', 'STANDARD', Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
+            else:
+                for SkuName in Pcd.SkuOverrideValues:
+                    for DefaultStoreName in Pcd.DefaultStoreName:
+                        CApp = CApp + '  Initialize_%s_%s_%s_%s();\n' % (SkuName, DefaultStoreName, Pcd.TokenSpaceGuidCName, Pcd.TokenCName)
         CApp = CApp + '}\n'
         
         CApp = CApp + PcdMainCEntry + '\n'
@@ -1323,17 +1343,11 @@ class DscBuildData(PlatformBuildClassObject):
         File = open (OutputValueFile, 'r')
         FileBuffer = File.readlines()
         File.close()
-        
-#         print 'Final Value Output:'
+
         StructurePcdSet = []
         for Pcd in FileBuffer:
             PcdValue = Pcd.split ('|')
             PcdInfo = PcdValue[0].split ('.')
-#             print 'SkuName          : ', PcdInfo[0]
-#             print 'TokenSpaceGuid   : ', PcdInfo[2]
-#             print 'TokenCName        : ', PcdInfo[3]
-#             print 'Value            : ', PcdValue[2]
-#             
             StructurePcdSet.append((PcdInfo[0], PcdInfo[2], PcdInfo[3], PcdValue[2].strip()))
         return StructurePcdSet
 

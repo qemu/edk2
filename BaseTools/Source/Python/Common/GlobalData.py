@@ -85,5 +85,8 @@ BuildOptionPcd = []
 #
 MixedPcd = {}
 
+# Structure Pcd dict
+gStructurePcd = {}
+
 # Pcd name for the Pcd which used in the Conditional directives
 gConditionalPcds = []
