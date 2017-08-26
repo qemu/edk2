@@ -1275,20 +1275,34 @@ class DscBuildData(PlatformBuildClassObject):
         
         MakeApp = PcdMakefileHeader
         if sys.platform == "win32":
-            MakeApp = MakeApp + 'APPNAME = %s\n' % (PcdValueInitName) + 'OBJECTS = %s\%s.obj\n' % (self.OutputPath, PcdValueInitName) + 'INC = $(INC)'
+            MakeApp = MakeApp + 'APPNAME = %s\n' % (PcdValueInitName) + 'OBJECTS = %s\%s.obj\n' % (self.OutputPath, PcdValueInitName) + 'INC = '
         else:
             MakeApp = MakeApp + PcdGccMakefile
             MakeApp = MakeApp + 'APPNAME = %s\n' % (PcdValueInitName) + 'OBJECTS = %s/%s.o\n' % (self.OutputPath, PcdValueInitName) + \
                       'include $(MAKEROOT)/Makefiles/app.makefile\n' + 'BUILD_CFLAGS += -Wno-error\n' + 'INCLUDE +='
-        Packages = {}
+
+        PlatformInc = {}
+        for Cache in self._Bdb._CACHE_.values():
+            if Cache.MetaFile.Ext.lower() != '.dec':
+                continue
+            if Cache.Includes:
+                if str(Cache.MetaFile.Path) not in PlatformInc:
+                    PlatformInc[str(Cache.MetaFile.Path)] = Cache.Includes
+
+        PcdDependDEC = []
         for Pcd in StructuredPcds.values():
             for PackageDec in Pcd.PackageDecs:
-                Package = PackageDec.split('/')[0]
-                if Package not in Packages:
-                    Packages[Package] = True
-                    MakeApp = MakeApp + ' -I $(WORKSPACE)/%s/Include' % (Package)
-                    if Package == 'MdePkg':
-                        MakeApp = MakeApp + ' -I $(WORKSPACE)/%s/Include/Ia32' % (Package)
+                Package = os.path.normpath(mws.join(GlobalData.gWorkspace, PackageDec))
+                if not os.path.exists(Package):
+                    EdkLogger.error('Build', RESOURCE_NOT_AVAILABLE, "The dependent Package %s of PCD %s.%s is not exist." % (PackageDec, Pcd.TokenSpaceGuidCName, Pcd.TokenCName))
+                if Package not in PcdDependDEC:
+                    PcdDependDEC.append(Package)
+
+        if PlatformInc and PcdDependDEC:
+            for pkg in PcdDependDEC:
+                if pkg in PlatformInc:
+                    for inc in PlatformInc[pkg]:
+                        MakeApp += '-I'  + str(inc) + ' '
         MakeApp = MakeApp + '\n' 
         if sys.platform == "win32":
             MakeApp = MakeApp + PcdMakefileEnd
