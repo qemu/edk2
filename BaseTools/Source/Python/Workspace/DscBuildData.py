@@ -978,9 +978,11 @@ class DscBuildData(PlatformBuildClassObject):
         PcdSet = set()
         # Find out all possible PCD candidates for self._Arch
         RecordList = self._RawData[Type, self._Arch]
+        AvailableSkuIdSet = SkuObj.AvailableSkuIdSet.copy()
+        AvailableSkuIdSet.update({'DEFAULT':0, 'COMMON':0})
         PcdValueDict = sdict()
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            if SkuName not in (SkuObj.SystemSkuId, 'DEFAULT', 'COMMON'):
+            if SkuName not in AvailableSkuIdSet:
                 EdkLogger.error('Build', OPTION_VALUE_INVALID, "The SKUID name %s is not supported by the platform." % SkuName)
             if "." not in TokenSpaceGuid:
                 PcdSet.add((PcdCName, TokenSpaceGuid, SkuName, Dummy4))
