@@ -48,9 +48,13 @@ NumBlocks     = 0x38
 # RegionType <FV, DATA, or FILE>
 #
 ################################################################################
-0x00000000|0x00360000
+0x00000000|0x00350000
 gEfiNt32PkgTokenSpaceGuid.PcdWinNtFlashFvRecoveryBase|gEfiNt32PkgTokenSpaceGuid.PcdWinNtFlashFvRecoverySize
 FV = FvRecovery
+
+0x00350000|0x00010000
+gEfiNt32PkgTokenSpaceGuid.PcdWinNtVpdBaseAddress
+FILE = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/FV/8C3D856A-9BE6-468E-850A-24F7A8D38E08.bin
 
 0x00360000|0x0000c000
 gEfiNt32PkgTokenSpaceGuid.PcdWinNtFlashNvStorageVariableBase|gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize

@@ -57,10 +57,12 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVpdBaseAddress
 
   gEfiNt32PkgTokenSpaceGuid.PcdWinNtFlashNvStorageFtwWorkingBase
   gEfiNt32PkgTokenSpaceGuid.PcdWinNtFlashNvStorageFtwSpareBase
   gEfiNt32PkgTokenSpaceGuid.PcdWinNtFlashNvStorageVariableBase
+  gEfiNt32PkgTokenSpaceGuid.PcdWinNtVpdBaseAddress
 
 [Depex]
   gNtFwhPpiGuid

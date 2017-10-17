@@ -985,7 +985,18 @@ GetWorker (
     {
       VPD_HEAD *VpdHead;
       VpdHead = (VPD_HEAD *) ((UINT8 *)PeiPcdDb + Offset);
-      return (VOID *) ((UINTN) PcdGet32 (PcdVpdBaseAddress) + VpdHead->Offset);
+      
+      if (PcdToken (PcdVpdBaseAddress) > PeiPcdDb->LocalTokenCount) {
+        //
+        // PcdVpdBaseAddress is not dynamic PCD
+        //
+        return (VOID *) ((UINTN) PcdGet32 (PcdVpdBaseAddress) + VpdHead->Offset);
+      } else {
+        //
+        // PcdVpdBaseAddress is dynamic PCD
+        //
+        return (VOID *) ((UINTN) PeiPcdGet32 (PcdToken (PcdVpdBaseAddress)) + VpdHead->Offset);
+      }
     }
       
     case PCD_TYPE_HII|PCD_TYPE_STRING:
