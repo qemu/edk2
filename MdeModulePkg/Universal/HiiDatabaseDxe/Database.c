@@ -768,7 +768,6 @@ UpdateDefaultSettingInFormPackage (
   UINTN   DefaultIdMaxNum;
   UINTN   Index;
   UINTN   EfiVarStoreIndex;
-  UINT8   MaxContainers;
   EFI_IFR_TYPE_VALUE IfrValue;
   EFI_IFR_TYPE_VALUE IfrManufactValue;
   BOOLEAN            StandardDefaultIsSet;
@@ -801,7 +800,6 @@ UpdateDefaultSettingInFormPackage (
   DefaultIdNumber   = 0;
   StandardDefaultIsSet = FALSE;
   ManufactDefaultIsSet = FALSE;
-  MaxContainers        = 0;
   while (IfrOffset < PackageLength) {
     switch (IfrOpHdr->OpCode) {
     case EFI_IFR_VARSTORE_EFI_OP:
@@ -814,9 +812,9 @@ UpdateDefaultSettingInFormPackage (
       //
       // Convert VarStore Name from ASCII string to Unicode string.
       //
-      EfiVarStoreList [EfiVarStoreNumber] = AllocatePool (IfrEfiVarStore->Header.Length + AsciiStrSize (IfrEfiVarStore->Name));
+      EfiVarStoreList [EfiVarStoreNumber] = AllocatePool (IfrEfiVarStore->Header.Length + AsciiStrSize ((CHAR8 *)IfrEfiVarStore->Name));
       CopyMem (EfiVarStoreList [EfiVarStoreNumber], IfrEfiVarStore, IfrEfiVarStore->Header.Length);
-      AsciiStrToUnicodeStrS (IfrEfiVarStore->Name, (CHAR16 *) &(EfiVarStoreList [EfiVarStoreNumber]->Name[0]), AsciiStrSize (IfrEfiVarStore->Name) * sizeof (CHAR16));
+      AsciiStrToUnicodeStrS ((CHAR8 *)IfrEfiVarStore->Name, (CHAR16 *) &(EfiVarStoreList [EfiVarStoreNumber]->Name[0]), AsciiStrSize ((CHAR8 *)IfrEfiVarStore->Name) * sizeof (CHAR16));
       Status = FindQuestionDefaultSetting (EFI_HII_DEFAULT_CLASS_STANDARD, EfiVarStoreList[EfiVarStoreNumber], &VarStoreQuestionHeader, NULL, IfrEfiVarStore->Size);
       if (!EFI_ERROR (Status)) {
         EfiVarStoreNumber ++;
@@ -911,7 +909,6 @@ UpdateDefaultSettingInFormPackage (
       IfrScope         = IfrOpHdr->Scope;
       IfrQuestionType  = IfrOpHdr->OpCode;
       IfrQuestionHdr   = (EFI_IFR_QUESTION_HEADER *) (IfrOpHdr + 1);
-      MaxContainers    = ((EFI_IFR_ORDERED_LIST *) IfrOpHdr)->MaxContainers;
       break;
     case EFI_IFR_ONE_OF_OPTION_OP:
       if (IfrQuestionHdr != NULL && IfrScope > 0) {
