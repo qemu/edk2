@@ -884,7 +884,7 @@ UpdateDefaultSettingInFormPackage (
       IfrScope         = IfrOpHdr->Scope;
       IfrQuestionType  = IfrOpHdr->OpCode;
       IfrQuestionHdr   = (EFI_IFR_QUESTION_HEADER *) (IfrOpHdr + 1);
-      Width            = 1 << (((EFI_IFR_ONE_OF *) IfrOpHdr)->Flags & EFI_IFR_NUMERIC_SIZE);
+      Width            = (UINTN) ((UINT32) 1 << (((EFI_IFR_ONE_OF *) IfrOpHdr)->Flags & EFI_IFR_NUMERIC_SIZE));
       EfiVarStoreIndex = IsEfiVarStoreQuestion (IfrQuestionHdr, EfiVarStoreList, EfiVarStoreNumber);
       StandardDefaultIsSet = FALSE;
       ManufactDefaultIsSet = FALSE;
@@ -930,18 +930,6 @@ UpdateDefaultSettingInFormPackage (
             } else {
               IfrOneOfOption->Flags &= ~EFI_IFR_OPTION_DEFAULT_MFG;
             }
-          }
-        }
-
-        if (IfrQuestionType == EFI_IFR_ORDERED_LIST_OP) {
-          if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_8 || IfrDefault->Type == EFI_IFR_TYPE_BOOLEAN) {
-            Width = 1;
-          } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_16) {
-            Width = 2;
-          } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_32) {
-            Width = 4;
-          } else if (IfrDefault->Type == EFI_IFR_TYPE_NUM_SIZE_64) {
-            Width = 8;
           }
         }
       }
