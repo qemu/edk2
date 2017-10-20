@@ -931,28 +931,6 @@ class DscBuildData(PlatformBuildClassObject):
         
         return structure_pcd_data
     
-    def CompleteStructurePcdValue(self,pcdset):
-        skuset = set([item[3] for item in pcdset])
-        pcddatamap = {(item[0],item[1],item[2],item[3]):item for item in pcdset}
-        FieldSet = {}
-        for item in pcdset:
-            if (item[0],item[1]) not in FieldSet:
-                FieldSet[(item[0],item[1])] = set()
-            FieldSet[(item[0],item[1])].add(item[2])
-        completeset = []    
-        for tockenspacename,pcdname, in FieldSet:
-            for field in FieldSet[(tockenspacename,pcdname)]:
-                for skuid in skuset:
-                    nextskuid = skuid
-                    while (tockenspacename,pcdname,field,nextskuid) not in pcddatamap:
-                        nextskuid = self.SkuIdMgr.GetNextSkuId(nextskuid)
-                        if nextskuid == "DEFAULT":
-                            break
-                    if (tockenspacename,pcdname,field,nextskuid) not in pcddatamap:
-                        continue
-                    item = pcddatamap[tockenspacename,pcdname,field,nextskuid]
-                    completeset.append((tockenspacename,pcdname,field,skuid, item[4],item[5], item[6])) 
-        return completeset
     def UpdateStructuredPcds(self, TypeList, AllPcds):
         Pcds = AllPcds
         DefaultStoreMgr = DefaultStore(self.DefaultStores)
@@ -962,17 +940,18 @@ class DscBuildData(PlatformBuildClassObject):
         S_PcdSet = []
         # Find out all possible PCD candidates for self._Arch
         RecordList = []
+        
         for Type in TypeList:
             RecordList.extend(self._RawData[Type, self._Arch])
-
+            
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, default_store, Dummy4,Dummy5 in RecordList:
+            SkuName = 'DEFAULT' if SkuName == 'COMMON' else SkuName
             if SkuName not in SkuIds:
                 continue
-            SkuName = 'DEFAULT' if SkuName == 'COMMON' else SkuName
+            
             if SkuName in SkuIds and "." in TokenSpaceGuid:
                 S_PcdSet.append(( TokenSpaceGuid.split(".")[0],TokenSpaceGuid.split(".")[1], PcdCName,SkuName, default_store,Dummy5, AnalyzePcdExpression(Setting)[0]))
-        S_PcdSet = self.CompleteStructurePcdValue(S_PcdSet)
-                
+        
         # handle pcd value override        
         StrPcdSet = self.GetStructurePcdInfo(S_PcdSet)
         S_pcd_set = {}
@@ -1023,14 +1002,14 @@ class DscBuildData(PlatformBuildClassObject):
                     mindefaultstorename = DefaultStoreMgr.GetMin(PcdDefaultStoreSet)
                     for defaultstoreid in DefaultStores:
                         if defaultstoreid not in stru_pcd.SkuOverrideValues[skuid]:
-                            stru_pcd.SkuOverrideValues[skuid][defaultstoreid] = stru_pcd.SkuOverrideValues[nextskuid][mindefaultstorename]
+                            stru_pcd.SkuOverrideValues[skuid][defaultstoreid] = copy.deepcopy(stru_pcd.SkuOverrideValues[nextskuid][mindefaultstorename])
             for skuid in SkuIds:
                 if skuid in stru_pcd.SkuOverrideValues:
                     continue
                 nextskuid = self.SkuIdMgr.GetNextSkuId(skuid)
                 while nextskuid not in stru_pcd.SkuOverrideValues:
                     nextskuid = self.SkuIdMgr.GetNextSkuId(nextskuid)
-                stru_pcd.SkuOverrideValues[skuid] = stru_pcd.SkuOverrideValues[nextskuid]            
+                stru_pcd.SkuOverrideValues[skuid] = copy.deepcopy(stru_pcd.SkuOverrideValues[nextskuid]  )          
         Str_Pcd_Values = self.GenerateByteArrayValue(S_pcd_set)
         if Str_Pcd_Values:
             for (skuname,StoreName,PcdGuid,PcdName,PcdValue) in Str_Pcd_Values:
@@ -1562,7 +1541,7 @@ class DscBuildData(PlatformBuildClassObject):
     def CompletePcdValues(self,PcdSet):
         Pcds = {}
         DefaultStoreObj = DefaultStore(self._GetDefaultStores())
-        SkuIds = set([skuid for pcdobj in PcdSet.values() for skuid in pcdobj.SkuInfoList.keys()])
+        SkuIds = set([(skuid,skuobj.SkuId) for pcdobj in PcdSet.values() for skuid,skuobj in pcdobj.SkuInfoList.items()])
         DefaultStores = set([storename for pcdobj in PcdSet.values() for skuobj in pcdobj.SkuInfoList.values() for storename in skuobj.DefaultStoreDict.keys()])
         for PcdCName, TokenSpaceGuid in PcdSet:
             PcdObj = PcdSet[(PcdCName, TokenSpaceGuid)]
@@ -1581,14 +1560,16 @@ class DscBuildData(PlatformBuildClassObject):
                     mindefaultstorename = DefaultStoreObj.GetMin(set([defaultstorename  for defaultstorename in skuobj.DefaultStoreDict]))
                     for defaultstorename in DefaultStores:
                         if defaultstorename not in skuobj.DefaultStoreDict:
-                            skuobj.DefaultStoreDict[defaultstorename] = skuobj.DefaultStoreDict[mindefaultstorename]
+                            skuobj.DefaultStoreDict[defaultstorename] = copy.deepcopy(skuobj.DefaultStoreDict[mindefaultstorename])
                     skuobj.HiiDefaultValue = skuobj.DefaultStoreDict[mindefaultstorename]
-            for skuid in SkuIds:
-                if skuid not in PcdObj.SkuInfoList:
-                    nextskuid = self.SkuIdMgr.GetNextSkuId(skuid)
+            for skuname,skuid in SkuIds:
+                if skuname not in PcdObj.SkuInfoList:
+                    nextskuid = self.SkuIdMgr.GetNextSkuId(skuname)
                     while nextskuid not in PcdObj.SkuInfoList:
                         nextskuid = self.SkuIdMgr.GetNextSkuId(nextskuid)
-                    PcdObj.SkuInfoList[skuid] = PcdObj.SkuInfoList[nextskuid]
+                    PcdObj.SkuInfoList[skuname] = copy.deepcopy(PcdObj.SkuInfoList[nextskuid])
+                    PcdObj.SkuInfoList[skuname].SkuId = skuid
+                    PcdObj.SkuInfoList[skuname].SkuIdName = skuname
             if PcdType in [self._PCD_TYPE_STRING_[MODEL_PCD_DYNAMIC_HII], self._PCD_TYPE_STRING_[MODEL_PCD_DYNAMIC_EX_HII]]:
                 PcdObj.DefaultValue = PcdObj.SkuInfoList.values()[0].HiiDefaultValue if self.SkuIdMgr.SkuUsageType == self.SkuIdMgr.SINGLE else PcdObj.SkuInfoList["DEFAULT"].HiiDefaultValue
             Pcds[PcdCName, TokenSpaceGuid]= PcdObj
@@ -1719,7 +1700,7 @@ class DscBuildData(PlatformBuildClassObject):
             else:
                 MaxSize = 0
             if pcdDecObject.DatumType == 'VOID*':
-                for (skuname, skuobj) in pcd.SkuInfoList.items():
+                for (_, skuobj) in pcd.SkuInfoList.items():
                     datalen = 0
                     if skuobj.HiiDefaultValue.startswith("L"):
                         datalen = (len(skuobj.HiiDefaultValue) - 3 + 1) * 2
@@ -1730,9 +1711,23 @@ class DscBuildData(PlatformBuildClassObject):
                     if datalen > MaxSize:
                         MaxSize = datalen
                 pcd.MaxDatumSize = str(MaxSize)
+        rt, invalidhii = self.CheckVariableNameAssignment(Pcds)
+        if not rt:
+            invalidpcd = ",".join(invalidhii)
+            EdkLogger.error('build', PCD_VARIABLE_INFO_ERROR, Message='The same HII PCD must map to the same EFI variable for all SKUs', File=self.MetaFile, ExtraData=invalidpcd)
         return Pcds
 
-
+    def CheckVariableNameAssignment(self,Pcds):
+        invalidhii = []
+        for pcdname in Pcds:
+            pcd = Pcds[pcdname]
+            varnameset = set([sku.VariableName for (skuid,sku) in pcd.SkuInfoList.items()])
+            if len(varnameset) > 1:
+                invalidhii.append(".".join((pcdname[1],pcdname[0])))
+        if len(invalidhii):
+            return False,invalidhii
+        else:
+            return True, []
     # # Retrieve dynamic VPD PCD settings
     #
     #   @param  Type    PCD type

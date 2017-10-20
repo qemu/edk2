@@ -1561,7 +1561,7 @@ class PlatformAutoGen(AutoGen):
                 if default_skuobj:
                     PcdNvStoreDfBuffer.SkuInfoList.clear()
                     PcdNvStoreDfBuffer.SkuInfoList['DEFAULT'] = default_skuobj
-                    PcdNvStoreDfBuffer.MaxDatumSize = len(default_skuobj.DefaultValue.split(","))
+                    PcdNvStoreDfBuffer.MaxDatumSize = str(len(default_skuobj.DefaultValue.split(",")))
             
             PlatformPcds = self._PlatformPcds.keys()
             PlatformPcds.sort()
@@ -1739,6 +1739,13 @@ class PlatformAutoGen(AutoGen):
         self._DynamicPcdList.extend(UnicodePcdArray)
         self._DynamicPcdList.extend(HiiPcdArray)
         self._DynamicPcdList.extend(OtherPcdArray)
+        allskuset = [(SkuName,Sku.SkuId) for pcd in self._DynamicPcdList for (SkuName,Sku) in pcd.SkuInfoList.items()]
+        for pcd in self._DynamicPcdList:
+            if len(pcd.SkuInfoList) == 1:
+                for (SkuName,SkuId) in allskuset:
+                    if SkuId == 0:
+                        continue
+                    pcd.SkuInfoList[SkuName] = SkuInfoClass(SkuName, SkuId, '', '', '', '', '', pcd.DefaultValue)
         self.AllPcdList = self._NonDynamicPcdList + self._DynamicPcdList
         
     ## Return the platform build data object
