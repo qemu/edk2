@@ -793,7 +793,8 @@ UpdateDefaultSettingInFormPackage (
   IfrOffset     = 0;
   IfrScope      = 0;
   IfrOpHdr      = (EFI_IFR_OP_HEADER *) FormPackage->IfrData;
-  IfrQuestionHdr  = NULL;
+  IfrQuestionHdr    = NULL;
+  IfrQuestionType   = 0;
   EfiVarStoreMaxNum = BASE_NUMBER;
   EfiVarStoreNumber = 0;
   DefaultIdMaxNum   = BASE_NUMBER;
@@ -914,6 +915,7 @@ UpdateDefaultSettingInFormPackage (
       if (IfrQuestionHdr != NULL && IfrScope > 0) {
         IfrOneOfOption = (EFI_IFR_ONE_OF_OPTION *) IfrOpHdr;
         if (IfrQuestionType == EFI_IFR_ONE_OF_OP) {
+          Width = (UINTN) ((UINT32) 1 << (IfrOneOfOption->Flags & EFI_IFR_NUMERIC_SIZE));
           if (StandardDefaultIsSet) {
             if (CompareMem (&IfrOneOfOption->Value, &IfrValue, Width) == 0) {
               IfrOneOfOption->Flags |= EFI_IFR_OPTION_DEFAULT;
