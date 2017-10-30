@@ -41,17 +41,20 @@ UefiMain (
   TEST2   *Test2;
   TEST2   *Test3;
   TEST2   *Test4;
+  TEST2   *TestVpd;
   UINTN   PcdSize;
 
   Test  = (TEST *) PcdGetPtr (TestFix);
   Test2 = (TEST2 *) PcdGetPtr (TestPatchable);
   Test3 = (TEST2 *) PcdGetPtr (TestDynamic);
   Test4 = (TEST2 *) PcdGetPtr (TestDynamicExHii);
+  TestVpd = (TEST2 *) PcdGetPtr (TestDynamicVpd);
 
   Print (L"TestFix.Array is %s\n", (CHAR16*)Test->Array);
   Print (L"TestPatchable.Guid is %g\n", Test2->Guid);
   Print (L"TestDynamic.FlexibleArray is %s\n", (CHAR16*)Test3->FlexibleArray);
   Print (L"TestDynamicExHii.Guid is %g\n", Test4->Guid);
+  Print (L"TestDynamicVpd.FlexibleArray is %s\n", (CHAR16*)TestVpd->FlexibleArray);
 
   Test3->OneLineBoolA = TRUE;
   PcdSize = PcdGetSize (TestDynamic);
