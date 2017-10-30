@@ -1558,6 +1558,7 @@ class PlatformAutoGen(AutoGen):
                 var_info = self.CollectVariables(self._DynamicPcdList)
                 default_skuobj = PcdNvStoreDfBuffer.SkuInfoList.get("DEFAULT")
                 default_skuobj.DefaultValue = var_info.dump()
+                PcdNvStoreDfBuffer.DefaultValue = var_info.dump()
                 if default_skuobj:
                     PcdNvStoreDfBuffer.SkuInfoList.clear()
                     PcdNvStoreDfBuffer.SkuInfoList['DEFAULT'] = default_skuobj
@@ -1743,9 +1744,9 @@ class PlatformAutoGen(AutoGen):
         for pcd in self._DynamicPcdList:
             if len(pcd.SkuInfoList) == 1:
                 for (SkuName,SkuId) in allskuset:
-                    if SkuId == 0:
+                    if type(SkuId) in (str,unicode) and eval(SkuId) == 0 or SkuId == 0:
                         continue
-                    pcd.SkuInfoList[SkuName] = SkuInfoClass(SkuName, SkuId, '', '', '', '', '', pcd.DefaultValue)
+                    pcd.SkuInfoList[SkuName] = pcd.SkuInfoList['DEFAULT']
         self.AllPcdList = self._NonDynamicPcdList + self._DynamicPcdList
         
     ## Return the platform build data object
