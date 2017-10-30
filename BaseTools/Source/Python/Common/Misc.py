@@ -2140,6 +2140,13 @@ class SkuClass():
                                       % (each, " | ".join(SkuIds.keys())))
         if self.SkuUsageType != self.SINGLE:
             self.AvailableSkuIds.update({'DEFAULT':0, 'COMMON':0})
+        if self.SkuIdSet:
+            GlobalData.gSkuids = (self.SkuIdSet)
+            if 'COMMON' in GlobalData.gSkuids:
+                GlobalData.gSkuids.remove('COMMON')
+            if GlobalData.gSkuids:
+                GlobalData.gSkuids.sort()
+
     def GetNextSkuId(self, skuname):
         if not self.__SkuInherit:
             self.__SkuInherit = {}

@@ -613,6 +613,9 @@ class DscBuildData(PlatformBuildClassObject):
                 self.DefaultStores[Record[1]] = (self.ToInt(Record[0]),Record[1])
             if TAB_DEFAULT_STORES_DEFAULT not in self.DefaultStores:
                 self.DefaultStores[TAB_DEFAULT_STORES_DEFAULT] = (0,TAB_DEFAULT_STORES_DEFAULT)
+            GlobalData.gDefaultStores = self.DefaultStores.keys()
+            if GlobalData.gDefaultStores:
+                GlobalData.gDefaultStores.sort()
         return self.DefaultStores
 
     # # Retrieve [Components] section information
@@ -1511,6 +1514,10 @@ class DscBuildData(PlatformBuildClassObject):
         
         for pcd in Pcds.values():
             pcdDecObject = self._DecPcds[pcd.TokenCName, pcd.TokenSpaceGuidCName]
+            # Only fix the value while no value provided in DSC file.
+            for sku in pcd.SkuInfoList.values():
+                if (sku.DefaultValue == "" or sku.DefaultValue==None):
+                    sku.DefaultValue = pcdDecObject.DefaultValue
             if 'DEFAULT' not in pcd.SkuInfoList.keys() and 'COMMON' not in pcd.SkuInfoList.keys():                
                 valuefromDec = pcdDecObject.DefaultValue
                 SkuInfo = SkuInfoClass('DEFAULT', '0', '', '', '', '', '', valuefromDec)
@@ -1798,6 +1805,10 @@ class DscBuildData(PlatformBuildClassObject):
         for pcd in Pcds.values():
             SkuInfoObj = pcd.SkuInfoList.values()[0]
             pcdDecObject = self._DecPcds[pcd.TokenCName, pcd.TokenSpaceGuidCName]
+            # Only fix the value while no value provided in DSC file.
+            for sku in pcd.SkuInfoList.values():
+                if (sku.DefaultValue == "" or sku.DefaultValue==None):
+                    sku.DefaultValue = pcdDecObject.DefaultValue
             if 'DEFAULT' not in pcd.SkuInfoList.keys() and 'COMMON' not in pcd.SkuInfoList.keys():
                 valuefromDec = pcdDecObject.DefaultValue
                 SkuInfo = SkuInfoClass('DEFAULT', '0', '', '', '', '', SkuInfoObj.VpdOffset, valuefromDec)
