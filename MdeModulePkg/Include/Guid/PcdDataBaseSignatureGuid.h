@@ -142,8 +142,8 @@ typedef struct {
 #pragma pack(1)
 
 typedef struct {
-  UINT16 DefaultId;
   UINT16 SkuId;
+  UINT16 DefaultId;
 } DEFAULT_INFO;
 
 typedef struct {
