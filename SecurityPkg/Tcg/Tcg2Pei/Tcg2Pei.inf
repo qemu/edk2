@@ -74,6 +74,7 @@
   gEfiPeiFirmwareVolumeInfoMeasurementExcludedPpiGuid                  ## SOMETIMES_CONSUMES
   gPeiTpmInitializedPpiGuid                                            ## SOMETIMES_PRODUCES
   gPeiTpmInitializationDonePpiGuid                                     ## PRODUCES
+  gEdkiiTcg2MeasurePpiGuid                                             ## PRODUCES
   gEfiEndOfPeiSignalPpiGuid                                            ## SOMETIMES_CONSUMES     ## NOTIFY
   gEdkiiPeiFirmwareVolumeInfoPrehashedFvPpiGuid                        ## SOMETIMES_CONSUMES
 

@@ -16,6 +16,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <PiPei.h>
 
 #include <IndustryStandard/UefiTcgPlatform.h>
+#include <Protocol/Tcg2Protocol.h>
+
 #include <Ppi/FirmwareVolumeInfo.h>
 #include <Ppi/FirmwareVolumeInfo2.h>
 #include <Ppi/TpmInitialized.h>
@@ -23,6 +25,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Ppi/EndOfPeiPhase.h>
 #include <Ppi/FirmwareVolumeInfoMeasurementExcluded.h>
 #include <Ppi/FirmwareVolumeInfoPrehashedFV.h>
+#include <Ppi/Tcg2Measure.h>
 
 #include <Guid/TcgEventHob.h>
 #include <Guid/MeasuredFvHob.h>
@@ -38,7 +41,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/HobLib.h>
 #include <Library/PcdLib.h>
 #include <Library/PeiServicesTablePointerLib.h>
-#include <Protocol/Tcg2Protocol.h>
 #include <Library/PerformanceLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/ReportStatusCodeLib.h>
@@ -114,6 +116,45 @@ EndofPeiSignalNotifyCallBack (
   IN EFI_PEI_NOTIFY_DESCRIPTOR     *NotifyDescriptor,
   IN VOID                          *Ppi
   );
+
+/**
+  The EFI_TCG2_MEASURE_PPI. HashLogExtendEvent function call provides callers with
+  an opportunity to extend and optionally log events without requiring
+  knowledge of actual TPM commands. 
+  The extend operation will occur even if this function cannot create an event
+  log entry. The interface can be called before Memory Ready
+
+  Be noted that the interface will not save any FV measuring information. If want Tcg2Pei to
+  remember this info, user should install properly
+
+  @param[in]  This                Points to this instance of the
+                                EFI_PEI_FIRMWARE_VOLUME_PPI.
+  @param[in]  Flags              Bitmap providing additional information. Defined in Tcg2Protocol.h
+  @param[in]  DataToHash         Physical address of the start of the data buffer to be hashed. 
+  @param[in]  DataToHashLen      The length in bytes of the buffer referenced by DataToHash.
+  @param[in]  Event              Pointer to data buffer containing information about the event.
+
+  @retval EFI_SUCCESS            Operation completed successfully.
+  @retval EFI_DEVICE_ERROR       The command was unsuccessful.
+  @retval EFI_VOLUME_FULL        The extend operation occurred, but the event could not be written to one or more event logs.
+  @retval EFI_INVALID_PARAMETER  One or more of the parameters are incorrect.
+  
+**/
+EFI_STATUS
+HashLogExtendEvent(
+  IN  UINT64                           Flags,
+  IN  UINT8                            *HashData,
+  IN  UINTN                            HashDataLen,
+  IN  EFI_TCG2_EVENT                   *Event
+);
+
+EFI_PEI_TCG2_MEASURE_PPI mTcg2MeasurePpi = {HashLogExtendEvent};
+
+EFI_PEI_PPI_DESCRIPTOR mPpiList = {
+  (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+  &gEdkiiTcg2MeasurePpiGuid,
+  &mTcg2MeasurePpi
+};
 
 EFI_PEI_NOTIFY_DESCRIPTOR           mNotifyList[] = {
   {
@@ -370,7 +411,7 @@ LogHashEvent (
 
 **/
 EFI_STATUS
-HashLogExtendEvent (
+HashLogExtendEventInternal (
   IN      UINT64                    Flags,
   IN      UINT8                     *HashData,
   IN      UINTN                     HashDataLen,
@@ -410,6 +451,40 @@ HashLogExtendEvent (
 }
 
 /**
+  Do a hash operation on a data buffer, extend a specific TPM PCR with the hash result,
+  and build a GUIDed HOB recording the event which will be passed to the DXE phase and
+  added into the Event Log.
+
+  @param[in]      Flags         Bitmap providing additional information.
+  @param[in]      HashData      Physical address of the start of the data buffer 
+                                to be hashed, extended, and logged.
+  @param[in]      HashDataLen   The length, in bytes, of the buffer referenced by HashData.
+  @param[in]      NewEventHdr   Pointer to a TCG_PCR_EVENT_HDR data structure.  
+  @param[in]      NewEventData  Pointer to the new event data.  
+
+  @retval EFI_SUCCESS           Operation completed successfully.
+  @retval EFI_OUT_OF_RESOURCES  No enough memory to log the new event.
+  @retval EFI_DEVICE_ERROR      The command was unsuccessful.
+
+**/
+EFI_STATUS
+HashLogExtendEvent (
+  IN      UINT64                    Flags,
+  IN      UINT8                     *HashData,
+  IN      UINTN                     HashDataLen,
+  IN      EFI_TCG2_EVENT            *Event
+  )
+{
+  TCG_PCR_EVENT_HDR NewEventHdr;
+
+  NewEventHdr.PCRIndex  = Event->Header.PCRIndex;
+  NewEventHdr.EventType = Event->Header.EventType;
+  NewEventHdr.EventSize = Event->Size - sizeof(UINT32) - Event->Header.HeaderSize;
+
+  return HashLogExtendEventInternal(Flags, HashData, HashDataLen, &NewEventHdr, Event->Event);
+}
+
+/**
   Measure CRTM version.
 
   @retval EFI_SUCCESS           Operation completed successfully.
@@ -433,7 +508,7 @@ MeasureCRTMVersion (
   TcgEventHdr.EventType = EV_S_CRTM_VERSION;
   TcgEventHdr.EventSize = (UINT32) StrSize((CHAR16*)PcdGetPtr (PcdFirmwareVersionString));
 
-  return HashLogExtendEvent (
+  return HashLogExtendEventInternal (
            0,
            (UINT8*)PcdGetPtr (PcdFirmwareVersionString),
            TcgEventHdr.EventSize,
@@ -592,7 +667,7 @@ MeasureFvImage (
     //
     // Hash the FV, extend digest to the TPM and log TCG event
     //
-    Status = HashLogExtendEvent (
+    Status = HashLogExtendEventInternal (
                0,
                (UINT8*) (UINTN) FvBlob.BlobBase,
                (UINTN) FvBlob.BlobLength,
@@ -756,6 +831,8 @@ PeimEntryMP (
   )
 {
   EFI_STATUS                        Status;
+  EFI_PEI_PPI_DESCRIPTOR            *PpiDescriptor;
+  EFI_PEI_TCG2_MEASURE_PPI          *Tcg2Ppi;
 
   mMeasuredBaseFvInfo  = (EFI_PLATFORM_FIRMWARE_BLOB *) AllocateZeroPool (sizeof (EFI_PLATFORM_FIRMWARE_BLOB) * PcdGet32 (PcdPeiCoreMaxFvSupported));
   ASSERT (mMeasuredBaseFvInfo != NULL);
@@ -769,6 +846,23 @@ PeimEntryMP (
   Status = MeasureMainBios ();
   if (EFI_ERROR(Status)) {
     return Status;
+  }
+
+  //
+  // Re-install Tcg2 Measure PPI after memory ready
+  //
+  Status = PeiServicesLocatePpi (
+             &gEdkiiTcg2MeasurePpiGuid,
+             0,
+             &PpiDescriptor,
+             (VOID **) &Tcg2Ppi
+             );
+  if (!EFI_ERROR (Status)) {
+    Status = PeiServicesReInstallPpi (PpiDescriptor, &mPpiList);
+    if (EFI_ERROR (Status)) {
+      ASSERT_EFI_ERROR (Status);
+      return Status;
+    }
   }
 
   //
@@ -806,7 +900,7 @@ MeasureSeparatorEventWithError (
   TcgEvent.PCRIndex  = PCRIndex;
   TcgEvent.EventType = EV_SEPARATOR;
   TcgEvent.EventSize = (UINT32)sizeof (EventData);
-  return HashLogExtendEvent(0,(UINT8 *)&EventData, TcgEvent.EventSize, &TcgEvent,(UINT8 *)&EventData);
+  return HashLogExtendEventInternal(0,(UINT8 *)&EventData, TcgEvent.EventSize, &TcgEvent,(UINT8 *)&EventData);
 }
 
 /**
@@ -917,6 +1011,12 @@ PeimEntryMA (
           goto Done;
         }
       }
+
+      //
+      // Install Tcg2 Measure PPI
+      //
+      Status = PeiServicesInstallPpi (&mPpiList);
+      ASSERT_EFI_ERROR (Status);
     }
 
     //
