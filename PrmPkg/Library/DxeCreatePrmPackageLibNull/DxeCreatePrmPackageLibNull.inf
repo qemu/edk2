@@ -1,0 +1,34 @@
+### @file
+# Component information file for CreatePrmPackageLib
+#
+# @copyright
+# INTEL CONFIDENTIAL
+# Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
+#
+# This program and the accompanying materials are licensed and made available under
+# the terms and conditions of the BSD License which accompanies this distribution.
+# The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+###
+
+[Defines]
+  INF_VERSION                    = 0x00010017
+  BASE_NAME                      = DxeCreatePrmPackageLibNull
+  FILE_GUID                      = 059880D4-87A9-47B6-B0BD-00146A840666
+  VERSION_STRING                 = 1.0
+  MODULE_TYPE                    = DXE_DRIVER
+  LIBRARY_CLASS                  = CreatePrmPackageLib
+
+[LibraryClasses]
+  BaseLib
+
+[Packages]
+  MdePkg/MdePkg.dec
+  PrmPkg/PrmPkg.dec
+
+[Sources]
+  DxeCreatePrmPackageLibNull.c

@@ -22,6 +22,7 @@
 #include <Library/PrmPeCoffLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Library/PrmCreatePrmPackageLib.h>
 #include <Protocol/AcpiTable.h>
 #include <Protocol/PrmConfig.h>
 
@@ -325,6 +326,9 @@ PrmLoaderEndOfDxeNotification (
   ASSERT_EFI_ERROR (Status);
 
   Status = PublishPrmAcpiTable (PrmAcpiDescriptionTable);
+  ASSERT_EFI_ERROR (Status);
+
+  Status = CreatePrmPackage (PrmAcpiDescriptionTable);
   ASSERT_EFI_ERROR (Status);
 
   if (PrmAcpiDescriptionTable != NULL) {

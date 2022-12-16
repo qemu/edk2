@@ -45,6 +45,10 @@
   #
   PrmPeCoffLib|Include/Library/PrmPeCoffLib.h
 
+  ## @libraryclass Provides function to create PrmPackage.
+  #
+  CreatePrmPackageLib|Include/Library/PrmCreatePrmPackageLib.h
+
 [Protocols]
   ## PRM Configuration Protocol
   #

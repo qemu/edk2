@@ -65,6 +65,7 @@
   PrmContextBufferLib|$(PLATFORM_PACKAGE)/Library/DxePrmContextBufferLib/DxePrmContextBufferLib.inf
   PrmModuleDiscoveryLib|$(PLATFORM_PACKAGE)/Library/DxePrmModuleDiscoveryLib/DxePrmModuleDiscoveryLib.inf
   PrmPeCoffLib|$(PLATFORM_PACKAGE)/Library/DxePrmPeCoffLib/DxePrmPeCoffLib.inf
+  CreatePrmPackageLib|$(PLATFORM_PACKAGE)/Library/DxePrmCreatePrmPackageLibNull.inf
 
 
 [LibraryClasses.common.UEFI_APPLICATION]

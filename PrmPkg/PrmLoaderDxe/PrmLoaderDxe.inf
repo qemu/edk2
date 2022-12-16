@@ -45,6 +45,7 @@
   UefiBootServicesTableLib
   UefiDriverEntryPoint
   UefiLib
+  CreatePrmPackageLib
 
 [Pcd]
   gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiDefaultOemId            ## CONSUMES
