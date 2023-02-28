@@ -279,7 +279,7 @@ HandOffToDxeCore (
   if (FeaturePcdGet (PcdDxeIplSwitchToLongMode)) {
     //
     // Compute the top of the stack we were allocated, which is used to load X64 dxe core.
-    // Pre-allocate a 32 bytes which confroms to x64 calling convention.
+    // Pre-allocate a 32 bytes which conforms to x64 calling convention.
     //
     // The first four parameters to a function are passed in rcx, rdx, r8 and r9.
     // Any further parameters are pushed on the stack. Furthermore, space (4 * 8bytes) for the
