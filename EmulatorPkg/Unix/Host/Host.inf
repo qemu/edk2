@@ -2,7 +2,7 @@
 # Entry Point of Emu Emulator
 #
 # Main executable file of Unix Emulator that loads PEI core after initialization finished.
-# Copyright (c) 2008 - 2022, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2008 - 2023, Intel Corporation. All rights reserved.<BR>
 # Portions copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -42,12 +42,19 @@
   Ia32/Gasket.S       # enforce 16-byte stack alignment for Mac OS X
   Ia32/SwitchStack.c
 
+[Sources.ARM]
+  Arm/Gasket.c
+  Arm/SwitchStack.S
+  CacheMaintenance.c
 
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   NetworkPkg/NetworkPkg.dec
   EmulatorPkg/EmulatorPkg.dec
+
+[Packages.ARM]
+  ArmPkg/ArmPkg.dec
 
 [LibraryClasses]
   DebugLib
@@ -126,6 +133,9 @@
    GCC:*_GCC5_X64_CC_FLAGS = "-DEFIAPI=__attribute__((ms_abi))" -flto -DUSING_LTO -Os
    GCC:*_*_X64_PP_FLAGS == -m64 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
    GCC:*_*_X64_ASM_FLAGS == -m64 -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
+
+   GCC:*_*_ARM_DLINK_FLAGS == -o $(BIN_DIR)/Host -mthumb -march=armv7-a -mlittle-endian -mabi=aapcs -L/usr/X11R6/lib
+   GCC:*_*_ARM_CC_FLAGS == -g -Os -fshort-wchar -fno-builtin -fno-strict-aliasing -Wall -Werror -Wno-array-bounds -fno-common -march=armv7-a -mlittle-endian -mabi=aapcs -fno-short-enums -funsigned-char -fstack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -mword-relocations -flto -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address -mthumb -mfloat-abi=hard -fno-pic -fno-pie -c -include $(DEST_DIR_DEBUG)/AutoGen.h
 
    GCC:*_*_*_DLINK2_FLAGS == -lpthread -ldl -lXext -lX11
 

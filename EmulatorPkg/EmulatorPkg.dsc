@@ -313,6 +313,11 @@
     ##
     EmulatorPkg/Unix/Host/Host.inf
   !endif
+!elseif "ARM" in $(ARCH) && "MSFT" not in $(FAMILY) && $(WIN_HOST_BUILD) == FALSE
+  ##
+  #  Emulator, OS POSIX application
+  ##
+  EmulatorPkg/Unix/Host/Host.inf
 !endif
 
 !ifndef $(SKIP_MAIN_BUILD)
