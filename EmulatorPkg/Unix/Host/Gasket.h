@@ -200,7 +200,7 @@ ReverseGasketUint64Uint64 (
   );
 
 //
-// Gasket functions for EFI_EMU_UGA_IO_PROTOCOL
+// Gasket functions for EMU_GRAPHICS_WINDOW_PROTOCOL
 //
 
 EFI_STATUS
