@@ -1,0 +1,36 @@
+## @file
+#  Module Information description file for ARM MMU NULL Library
+#
+#  For user space environments like EmulatorPkg
+#
+#  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010017
+  BASE_NAME                      = ArmMmuNullLib
+  FILE_GUID                      = E61735C8-DD00-4C4A-B07B-FD71A67C239D
+  VERSION_STRING                 = 1.0
+  MODULE_TYPE                    = BASE
+  LIBRARY_CLASS                  = ArmMmuLib
+#
+# The following information is for reference only and not required by the build tools.
+#
+# VALID_ARCHITECTURES ARM AARCH64
+#
+
+[LibraryClasses]
+
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  MdePkg/MdePkg.dec
+
+[Pcd]
+
+[Sources]
+  ArmMmuNullLib.c
+
+[Guids]

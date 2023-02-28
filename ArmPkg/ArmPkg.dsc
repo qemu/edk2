@@ -6,6 +6,7 @@
 # Copyright (c) 2016, Linaro Ltd. All rights reserved.<BR>
 # Copyright (c) Microsoft Corporation.<BR>
 # Copyright (c) 2021, Ampere Computing LLC. All rights reserved.
+# Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 #
 #    SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -142,6 +143,7 @@
   ArmPkg/Filesystem/SemihostFs/SemihostFs.inf
 
   ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
+  ArmPkg/Library/ArmMmuNullLib/ArmMmuNullLib.inf
 
   ArmPkg/Drivers/ArmPciCpuIo2Dxe/ArmPciCpuIo2Dxe.inf
   ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
