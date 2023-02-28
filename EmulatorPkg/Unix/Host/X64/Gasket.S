@@ -8,6 +8,7 @@
 # RSI, RDI calle-save on EFI, scatch on UNIX callign
 #
 # Copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
+# Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #------------------------------------------------------------------------------
@@ -941,8 +942,8 @@ ASM_PFX(GasketPosixFileOpen):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileCLose)
-ASM_PFX(GasketPosixFileCLose):
+ASM_GLOBAL ASM_PFX(GasketPosixFileClose)
+ASM_PFX(GasketPosixFileClose):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -951,7 +952,7 @@ ASM_PFX(GasketPosixFileCLose):
 
   movq    %rcx, %rdi    // Swizzle args
 
-  call    ASM_PFX(PosixFileCLose)
+  call    ASM_PFX(PosixFileClose)
 
   popq    %rdi          // restore state
   popq    %rsi
@@ -1017,8 +1018,8 @@ ASM_PFX(GasketPosixFileWrite):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileSetPossition)
-ASM_PFX(GasketPosixFileSetPossition):
+ASM_GLOBAL ASM_PFX(GasketPosixFileSetPosition)
+ASM_PFX(GasketPosixFileSetPosition):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -1028,7 +1029,7 @@ ASM_PFX(GasketPosixFileSetPossition):
   movq    %rcx, %rdi    // Swizzle args
   movq    %rdx, %rsi
 
-  call    ASM_PFX(PosixFileSetPossition)
+  call    ASM_PFX(PosixFileSetPosition)
 
   popq    %rdi          // restore state
   popq    %rsi
@@ -1036,8 +1037,8 @@ ASM_PFX(GasketPosixFileSetPossition):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileGetPossition)
-ASM_PFX(GasketPosixFileGetPossition):
+ASM_GLOBAL ASM_PFX(GasketPosixFileGetPosition)
+ASM_PFX(GasketPosixFileGetPosition):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -1047,7 +1048,7 @@ ASM_PFX(GasketPosixFileGetPossition):
   movq    %rcx, %rdi    // Swizzle args
   movq    %rdx, %rsi
 
-  call    ASM_PFX(PosixFileGetPossition)
+  call    ASM_PFX(PosixFileGetPosition)
 
   popq    %rdi          // restore state
   popq    %rsi
@@ -1115,8 +1116,8 @@ ASM_PFX(GasketPosixFileFlush):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileSystmeThunkOpen)
-ASM_PFX(GasketPosixFileSystmeThunkOpen):
+ASM_GLOBAL ASM_PFX(GasketPosixFileSystemThunkOpen)
+ASM_PFX(GasketPosixFileSystemThunkOpen):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -1125,7 +1126,7 @@ ASM_PFX(GasketPosixFileSystmeThunkOpen):
 
   movq    %rcx, %rdi    // Swizzle args
 
-  call    ASM_PFX(PosixFileSystmeThunkOpen)
+  call    ASM_PFX(PosixFileSystemThunkOpen)
 
   popq    %rdi          // restore state
   popq    %rsi
@@ -1133,8 +1134,8 @@ ASM_PFX(GasketPosixFileSystmeThunkOpen):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileSystmeThunkClose)
-ASM_PFX(GasketPosixFileSystmeThunkClose):
+ASM_GLOBAL ASM_PFX(GasketPosixFileSystemThunkClose)
+ASM_PFX(GasketPosixFileSystemThunkClose):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -1143,7 +1144,7 @@ ASM_PFX(GasketPosixFileSystmeThunkClose):
 
   movq    %rcx, %rdi    // Swizzle args
 
-  call    ASM_PFX(PosixFileSystmeThunkClose)
+  call    ASM_PFX(PosixFileSystemThunkClose)
 
   popq    %rdi          // restore state
   popq    %rsi

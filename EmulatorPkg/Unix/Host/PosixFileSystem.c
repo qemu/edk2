@@ -2,7 +2,7 @@
  POSIX Pthreads to emulate APs and implement threads
 
 Copyright (c) 2011, Apple Inc. All rights reserved.
-Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2019 - 2023, Intel Corporation. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
 
@@ -70,12 +70,12 @@ PosixFileSetInfo (
 EFI_FILE_PROTOCOL  gPosixFileProtocol = {
   EFI_FILE_REVISION,
   GasketPosixFileOpen,
-  GasketPosixFileCLose,
+  GasketPosixFileClose,
   GasketPosixFileDelete,
   GasketPosixFileRead,
   GasketPosixFileWrite,
-  GasketPosixFileGetPossition,
-  GasketPosixFileSetPossition,
+  GasketPosixFileGetPosition,
+  GasketPosixFileSetPosition,
   GasketPosixFileGetInfo,
   GasketPosixFileSetInfo,
   GasketPosixFileFlush
@@ -643,7 +643,7 @@ Done:;
 
 **/
 EFI_STATUS
-PosixFileCLose (
+PosixFileClose (
   IN EFI_FILE_PROTOCOL  *This
   )
 {
@@ -883,7 +883,7 @@ PosixFileWrite (
 
 **/
 EFI_STATUS
-PosixFileSetPossition (
+PosixFileSetPosition (
   IN EFI_FILE_PROTOCOL  *This,
   IN UINT64             Position
   )
@@ -930,7 +930,7 @@ PosixFileSetPossition (
 
 **/
 EFI_STATUS
-PosixFileGetPossition (
+PosixFileGetPosition (
   IN EFI_FILE_PROTOCOL  *This,
   OUT UINT64            *Position
   )
@@ -1473,7 +1473,7 @@ PosixFileFlush (
 }
 
 EFI_STATUS
-PosixFileSystmeThunkOpen (
+PosixFileSystemThunkOpen (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   )
 {
@@ -1530,7 +1530,7 @@ PosixFileSystmeThunkOpen (
 }
 
 EFI_STATUS
-PosixFileSystmeThunkClose (
+PosixFileSystemThunkClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   )
 {
@@ -1566,7 +1566,7 @@ EMU_IO_THUNK_PROTOCOL  gPosixFileSystemThunkIo = {
   NULL,
   NULL,
   0,
-  GasketPosixFileSystmeThunkOpen,
-  GasketPosixFileSystmeThunkClose,
+  GasketPosixFileSystemThunkOpen,
+  GasketPosixFileSystemThunkClose,
   NULL
 };

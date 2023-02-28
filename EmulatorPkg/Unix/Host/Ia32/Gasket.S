@@ -7,6 +7,7 @@
 # the code common.
 #
 # Copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
+# Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #------------------------------------------------------------------------------
@@ -847,8 +848,8 @@ ASM_PFX(GasketPosixFileOpen):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileCLose)
-ASM_PFX(GasketPosixFileCLose):
+ASM_GLOBAL ASM_PFX(GasketPosixFileClose)
+ASM_PFX(GasketPosixFileClose):
   pushl %ebp
   movl  %esp, %ebp
   subl  $24, %esp      // sub extra 16 from the stack for alignment
@@ -856,7 +857,7 @@ ASM_PFX(GasketPosixFileCLose):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(PosixFileCLose)
+  call    ASM_PFX(PosixFileClose)
 
   leave
   ret
@@ -915,8 +916,8 @@ ASM_PFX(GasketPosixFileWrite):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileSetPossition)
-ASM_PFX(GasketPosixFileSetPossition):
+ASM_GLOBAL ASM_PFX(GasketPosixFileSetPosition)
+ASM_PFX(GasketPosixFileSetPosition):
   pushl %ebp
   movl  %esp, %ebp
   subl  $40, %esp      // sub extra 16 from the stack for alignment
@@ -928,14 +929,14 @@ ASM_PFX(GasketPosixFileSetPossition):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(PosixFileSetPossition)
+  call    ASM_PFX(PosixFileSetPosition)
 
   leave
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileGetPossition)
-ASM_PFX(GasketPosixFileGetPossition):
+ASM_GLOBAL ASM_PFX(GasketPosixFileGetPosition)
+ASM_PFX(GasketPosixFileGetPosition):
   pushl %ebp
   movl  %esp, %ebp
   subl  $24, %esp      // sub extra 16 from the stack for alignment
@@ -945,7 +946,7 @@ ASM_PFX(GasketPosixFileGetPossition):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(PosixFileGetPossition)
+  call    ASM_PFX(PosixFileGetPosition)
 
   leave
   ret
@@ -1008,8 +1009,8 @@ ASM_PFX(GasketPosixFileFlush):
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileSystmeThunkOpen)
-ASM_PFX(GasketPosixFileSystmeThunkOpen):
+ASM_GLOBAL ASM_PFX(GasketPosixFileSystemThunkOpen)
+ASM_PFX(GasketPosixFileSystemThunkOpen):
   pushl %ebp
   movl  %esp, %ebp
   subl  $24, %esp      // sub extra 16 from the stack for alignment
@@ -1017,14 +1018,14 @@ ASM_PFX(GasketPosixFileSystmeThunkOpen):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(PosixFileSystmeThunkOpen)
+  call    ASM_PFX(PosixFileSystemThunkOpen)
 
   leave
   ret
 
 
-ASM_GLOBAL ASM_PFX(GasketPosixFileSystmeThunkClose)
-ASM_PFX(GasketPosixFileSystmeThunkClose):
+ASM_GLOBAL ASM_PFX(GasketPosixFileSystemThunkClose)
+ASM_PFX(GasketPosixFileSystemThunkClose):
   pushl %ebp
   movl  %esp, %ebp
   subl  $24, %esp      // sub extra 16 from the stack for alignment
@@ -1032,7 +1033,7 @@ ASM_PFX(GasketPosixFileSystmeThunkClose):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(PosixFileSystmeThunkClose)
+  call    ASM_PFX(PosixFileSystemThunkClose)
 
   leave
   ret

@@ -1,7 +1,7 @@
 /** @file
 
   Copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
-  Copyright (c) 2011 - 2019, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2011 - 2023, Intel Corporation. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -360,7 +360,7 @@ GasketPosixFileOpen (
 
 EFI_STATUS
 EFIAPI
-GasketPosixFileCLose (
+GasketPosixFileClose (
   IN EFI_FILE_PROTOCOL  *This
   );
 
@@ -388,14 +388,14 @@ GasketPosixFileWrite (
 
 EFI_STATUS
 EFIAPI
-GasketPosixFileSetPossition (
+GasketPosixFileSetPosition (
   IN EFI_FILE_PROTOCOL  *This,
   IN UINT64             Position
   );
 
 EFI_STATUS
 EFIAPI
-GasketPosixFileGetPossition (
+GasketPosixFileGetPosition (
   IN EFI_FILE_PROTOCOL  *This,
   OUT UINT64            *Position
   );
@@ -426,13 +426,13 @@ GasketPosixFileFlush (
 
 EFI_STATUS
 EFIAPI
-GasketPosixFileSystmeThunkOpen (
+GasketPosixFileSystemThunkOpen (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
 EFI_STATUS
 EFIAPI
-GasketPosixFileSystmeThunkClose (
+GasketPosixFileSystemThunkClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
