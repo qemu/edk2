@@ -115,6 +115,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Protocol/EmuThread.h>
 #include <Protocol/EmuBlockIo.h>
 #include <Protocol/EmuSnp.h>
+#include <Protocol/EmuCache.h>
 
 #include <Guid/FileInfo.h>
 #include <Guid/FileSystemInfo.h>
@@ -356,5 +357,6 @@ extern EMU_IO_THUNK_PROTOCOL  gPosixFileSystemThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gPthreadThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gBlockIoThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gSnpThunkIo;
+extern EMU_IO_THUNK_PROTOCOL  gCacheThunkIo;
 
 #endif

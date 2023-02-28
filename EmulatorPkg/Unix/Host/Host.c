@@ -1,6 +1,6 @@
 /*++ @file
 
-Copyright (c) 2006 - 2022, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2006 - 2023, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -165,6 +165,9 @@ main (
   // Emulator other Thunks
   //
   AddThunkProtocol (&gPthreadThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuApCount), FALSE);
+#if defined (MDE_CPU_ARM)
+  AddThunkProtocol (&gCacheThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuCache), FALSE);
+#endif
 
   // EmuSecLibConstructor ();
 

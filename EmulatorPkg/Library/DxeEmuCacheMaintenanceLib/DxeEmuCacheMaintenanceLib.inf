@@ -1,0 +1,37 @@
+## @file
+#  Instance of Cache Maintenance Library using emulator thunks to OS syscalls
+#
+#  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = DxeEmuCacheMaintenanceLib
+  FILE_GUID                      = 4ee4f13e-3aab-4654-9af9-36e0fa53107f
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.1
+  LIBRARY_CLASS                  = CacheMaintenanceLib|DXE_CORE DXE_DRIVER DXE_RUNTIME_DRIVER UEFI_DRIVER UEFI_APPLICATION
+
+#
+#  VALID_ARCHITECTURES           = IA32 X64 ARM
+#
+
+[Sources]
+  DxeEmuCacheMaintenanceLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  EmulatorPkg/EmulatorPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  BaseMemoryLib
+  HobLib
+
+[Protocols]
+  gEmuThunkProtocolGuid
+  gEmuCacheThunkProtocolGuid

@@ -187,6 +187,9 @@
 [LibraryClasses.common.PEIM]
   PcdLib|MdePkg/Library/PeiPcdLib/PeiPcdLib.inf
 
+[LibraryClasses.ARM.PEIM, LibraryClasses.ARM.PEI_CORE]
+  CacheMaintenanceLib|EmulatorPkg/Library/PeiEmuCacheMaintenanceLib/PeiEmuCacheMaintenanceLib.inf
+
 [LibraryClasses.common.DXE_CORE]
   HobLib|MdePkg/Library/DxeCoreHobLib/DxeCoreHobLib.inf
   MemoryAllocationLib|MdeModulePkg/Library/DxeCoreMemoryAllocationLib/DxeCoreMemoryAllocationLib.inf
@@ -216,6 +219,9 @@
   PeCoffExtraActionLib|EmulatorPkg/Library/DxeEmuPeCoffExtraActionLib/DxeEmuPeCoffExtraActionLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
   TimerLib|EmulatorPkg/Library/DxeTimerLib/DxeTimerLib.inf
+
+[LibraryClasses.ARM.DXE_CORE, LibraryClasses.ARM.DXE_RUNTIME_DRIVER, LibraryClasses.ARM.UEFI_DRIVER, LibraryClasses.ARM.DXE_DRIVER, LibraryClasses.ARM.UEFI_APPLICATION]
+  CacheMaintenanceLib|EmulatorPkg/Library/DxeEmuCacheMaintenanceLib/DxeEmuCacheMaintenanceLib.inf
 
 [PcdsFeatureFlag]
   gEfiMdeModulePkgTokenSpaceGuid.PcdPeiCoreImageLoaderSearchTeSectionFirst|FALSE
@@ -269,6 +275,7 @@
   gEmulatorPkgTokenSpaceGuid.PcdEmuFileSystem|L"."
   gEmulatorPkgTokenSpaceGuid.PcdEmuSerialPort|L"/dev/ttyS0"
   gEmulatorPkgTokenSpaceGuid.PcdEmuNetworkInterface|L"en0"
+  gEmulatorPkgTokenSpaceGuid.PcdEmuCache|L"CacheCtl"
 
   gEmulatorPkgTokenSpaceGuid.PcdEmuCpuModel|L"Intel(R) Processor Model"
   gEmulatorPkgTokenSpaceGuid.PcdEmuCpuSpeed|L"3000"

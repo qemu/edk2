@@ -80,6 +80,7 @@
   gEmuThreadThunkProtocolGuid
   gEmuBlockIoProtocolGuid
   gEmuSnpProtocolGuid
+  gEmuCacheThunkProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
 
 [Guids]
@@ -99,6 +100,7 @@
   gEmulatorPkgTokenSpaceGuid.PcdEmuGop|L"GOP Window"
   gEmulatorPkgTokenSpaceGuid.PcdEmuFileSystem
   gEmulatorPkgTokenSpaceGuid.PcdEmuSerialPort
+  gEmulatorPkgTokenSpaceGuid.PcdEmuCache
   gEmulatorPkgTokenSpaceGuid.PcdEmuNetworkInterface
   gEmulatorPkgTokenSpaceGuid.PcdNetworkPacketFilterSize
 

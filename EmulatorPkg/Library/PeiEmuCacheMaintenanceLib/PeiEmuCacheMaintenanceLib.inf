@@ -1,0 +1,39 @@
+## @file
+#  Instance of Cache Maintenance Library using emulator thunks to OS syscalls
+#
+#  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = PeiEmuCacheMaintenanceLib
+  FILE_GUID                      = 00b3e408-f999-4cf4-ba95-166678fc867c
+  MODULE_TYPE                    = PEIM
+  VERSION_STRING                 = 1.1
+  LIBRARY_CLASS                  = CacheMaintenanceLib|PEI_CORE PEIM
+
+#
+#  VALID_ARCHITECTURES           = IA32 X64 ARM
+#
+
+[Sources]
+  PeiEmuCacheMaintenanceLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  EmulatorPkg/EmulatorPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  BaseMemoryLib
+  PeiServicesLib
+
+[Ppis]
+  gEmuThunkPpiGuid                          # PPI ALWAYS_CONSUMED
+
+[Protocols]
+  gEmuCacheThunkProtocolGuid
