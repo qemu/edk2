@@ -4,7 +4,7 @@
 # The Emulation Platform can be used to debug individual modules, prior to creating
 # a real platform. This also provides an example for how an DSC is created.
 #
-# Copyright (c) 2006 - 2021, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2006 - 2023, Intel Corporation. All rights reserved.<BR>
 # Portions copyright (c) 2010 - 2011, Apple Inc. All rights reserved.<BR>
 # Copyright (c) Microsoft Corporation.
 #
@@ -19,7 +19,7 @@
   DSC_SPECIFICATION              = 0x00010005
   OUTPUT_DIRECTORY               = Build/Emulator$(ARCH)
 
-  SUPPORTED_ARCHITECTURES        = X64|IA32
+  SUPPORTED_ARCHITECTURES        = X64|IA32|ARM
   BUILD_TARGETS                  = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = EmulatorPkg/EmulatorPkg.fdf
@@ -140,6 +140,13 @@
   AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
 !endif
 
+[LibraryClasses.ARM]
+  ArmMmuLib|ArmPkg/Library/ArmMmuNullLib/ArmMmuNullLib.inf
+  NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
+
+  # Add support for GCC stack protector
+  NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf
+
 [LibraryClasses.common.SEC]
   PeiServicesLib|EmulatorPkg/Library/SecPeiServicesLib/SecPeiServicesLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
@@ -211,8 +218,10 @@
   TimerLib|EmulatorPkg/Library/DxeTimerLib/DxeTimerLib.inf
 
 [PcdsFeatureFlag]
-  gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdPeiCoreImageLoaderSearchTeSectionFirst|FALSE
+
+[PcdsFeatureFlag.IA32, PcdsFeatureFlag.X64]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplBuildPageTables|FALSE
 
 [PcdsFixedAtBuild]
@@ -368,7 +377,9 @@
 !endif
   }
 
+!if "ARM" not in $(ARCH)
   MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
+!endif
   MdeModulePkg/Universal/MemoryTest/NullMemoryTestDxe/NullMemoryTestDxe.inf
   EmulatorPkg/EmuThunkDxe/EmuThunk.inf
   EmulatorPkg/CpuRuntimeDxe/Cpu.inf

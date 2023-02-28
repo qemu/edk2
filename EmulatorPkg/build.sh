@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
-# Copyright (c) 2010 - 2019, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2010 - 2023, Intel Corporation. All rights reserved.<BR>
 #
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -82,6 +82,15 @@ case `uname` in
         ;;
       x86_64)
         HOST_PROCESSOR=X64
+        ;;
+      armv6l)
+        HOST_PROCESSOR=ARM
+        ;;
+      armv7l)
+        HOST_PROCESSOR=ARM
+        ;;
+      armv8l)
+        HOST_PROCESSOR=ARM
         ;;
     esac
 
@@ -174,6 +183,8 @@ case $PROCESSOR in
     LIB_NAMES="ld-linux-x86-64.so.2 libdl.so.2 crt1.o crti.o crtn.o"
     LIB_SEARCH_PATHS="/usr/lib/x86_64-linux-gnu /usr/lib64 /lib64 /usr/lib /lib"
     ;;
+  ARM)
+    ARCH_SIZE=32
 esac
 
 for libname in $LIB_NAMES

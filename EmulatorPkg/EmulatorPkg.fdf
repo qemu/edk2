@@ -1,7 +1,7 @@
 ## @file
 # This is Emulator FDF file with UEFI HII features enabled
 #
-# Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2008 - 2023, Intel Corporation. All rights reserved.<BR>
 # Portions copyright (c) 2009 - 2011, Apple Inc. All rights reserved.<BR>
 #
 # SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -148,7 +148,9 @@ INF  EmulatorPkg/ResetRuntimeDxe/Reset.inf
 INF  MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
 INF  EmulatorPkg/FvbServicesRuntimeDxe/FvbServicesRuntimeDxe.inf
 INF  MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
-INF  MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
+!if "ARM" not in $(ARCH)
+  INF  MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
+!endif
 INF  MdeModulePkg/Universal/MemoryTest/NullMemoryTestDxe/NullMemoryTestDxe.inf
 INF  EmulatorPkg/EmuThunkDxe/EmuThunk.inf
 INF  EmulatorPkg/CpuRuntimeDxe/Cpu.inf
