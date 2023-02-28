@@ -538,7 +538,7 @@ Arguments:
   LargestRegion           - Memory to use for SEC.
   LargestRegionSize       - Size of Memory to use for PEI
   BootFirmwareVolumeBase  - Start of the Boot FV
-  PeiCorePe32File         - SEC PE32
+  SecCorePe32File         - SEC PE32
 
 Returns:
   Success means control is transferred and thus we should never return
@@ -549,13 +549,13 @@ SecLoadFromCore (
   IN  UINTN  LargestRegion,
   IN  UINTN  LargestRegionSize,
   IN  UINTN  BootFirmwareVolumeBase,
-  IN  VOID   *PeiCorePe32File
+  IN  VOID   *SecCorePe32File
   )
 {
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  TopOfMemory;
   VOID                  *TopOfStack;
-  EFI_PHYSICAL_ADDRESS  PeiCoreEntryPoint;
+  EFI_PHYSICAL_ADDRESS  SecCoreEntryPoint;
   EFI_SEC_PEI_HAND_OFF  *SecCoreData;
   UINTN                 PeiStackSize;
 
@@ -600,7 +600,7 @@ SecLoadFromCore (
   //
   // Find the SEC Core Entry Point
   //
-  Status = SecPeCoffGetEntryPoint (PeiCorePe32File, (VOID **)&PeiCoreEntryPoint);
+  Status = SecPeCoffGetEntryPoint (SecCorePe32File, (VOID **)&SecCoreEntryPoint);
   if (EFI_ERROR (Status)) {
     return;
   }
@@ -609,7 +609,7 @@ SecLoadFromCore (
   // Transfer control to the SEC Core
   //
   PeiSwitchStacks (
-    (SWITCH_STACK_ENTRY_POINT)(UINTN)PeiCoreEntryPoint,
+    (SWITCH_STACK_ENTRY_POINT)(UINTN)SecCoreEntryPoint,
     SecCoreData,
     (VOID *)gPpiList,
     TopOfStack

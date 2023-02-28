@@ -163,7 +163,7 @@ SecLoadFromCore (
   IN  UINTN  LargestRegion,
   IN  UINTN  LargestRegionSize,
   IN  UINTN  BootFirmwareVolumeBase,
-  IN  VOID   *PeiCoreFile
+  IN  VOID   *SecCoreFile
   );
 
 EFI_STATUS
