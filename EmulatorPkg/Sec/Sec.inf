@@ -3,7 +3,7 @@
 #
 # Main executable file of Unix Emulator that loads PEI core after initialization finished.
 # Portions copyright (c) 2011, Apple Inc. All rights reserved.<BR>
-# Copyright (c) 2012, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2012 - 2023, Intel Corporation. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -30,9 +30,16 @@
   Ia32/SwitchRam.asm
   Ia32/SwitchRam.S
 
+[Sources.ARM]
+  Arm/TempRam.c
+  Arm/SwitchRam.S
+
 [Packages]
   MdePkg/MdePkg.dec
   EmulatorPkg/EmulatorPkg.dec
+
+[Packages.ARM]
+  ArmPkg/ArmPkg.dec
 
 [LibraryClasses]
   DebugLib
