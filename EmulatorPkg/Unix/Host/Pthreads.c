@@ -120,7 +120,7 @@ PthreadCreate (
   //
   // Threads inherit interrupt state so disable interrupts before we start thread
   //
-  if (SecInterruptEanbled ()) {
+  if (SecInterruptEnabled ()) {
     SecDisableInterrupt ();
     EnabledOnEntry = TRUE;
   } else {

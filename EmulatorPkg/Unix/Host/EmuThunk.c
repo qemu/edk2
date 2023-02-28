@@ -229,7 +229,7 @@ SecDisableInterrupt (
 }
 
 BOOLEAN
-SecInterruptEanbled (
+SecInterruptEnabled (
   void
   )
 {

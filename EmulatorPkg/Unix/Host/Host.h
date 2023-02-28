@@ -347,7 +347,7 @@ SecDisableInterrupt (
   );
 
 BOOLEAN
-SecInterruptEanbled (
+SecInterruptEnabled (
   VOID
   );
 
