@@ -136,7 +136,7 @@ main (
   FirmwareVolumesStr = (CHAR16 *)PcdGetPtr (PcdEmuFirmwareVolume);
 
   //
-  // PPIs pased into PEI_CORE
+  // PPIs passed into PEI_CORE
   //
   SecEmuThunkPpi = AllocateZeroPool (sizeof (EMU_THUNK_PPI) + FixedPcdGet32 (PcdPersistentMemorySize));
   if (SecEmuThunkPpi == NULL) {
