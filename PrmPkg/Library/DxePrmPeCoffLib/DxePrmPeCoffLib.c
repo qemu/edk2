@@ -174,7 +174,8 @@ GetExportDirectoryInPeCoffImage (
   //
   switch (PeCoffLoaderImageContext->Machine) {
     case EFI_IMAGE_MACHINE_IA32:
-      //
+    case EFI_IMAGE_MACHINE_ARMTHUMB_MIXED:
+    //
       // Assume PE32 image with IA32 Machine field.
       //
       Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
