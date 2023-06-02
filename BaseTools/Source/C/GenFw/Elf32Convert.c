@@ -641,7 +641,7 @@ ScanSections32 (
           if (strcmp((CHAR8*)SymName, mExportSymName[ExpIndex]) != 0) {
             continue;
           }
-          mExportRVA[ExpIndex] = (UINT32)(Sym->st_value);
+          mExportRVA[ExpIndex] = (UINT32)(Sym->st_value + mAlignmentDelta);
           mExportSize += 2 * EFI_IMAGE_EXPORT_ADDR_SIZE + EFI_IMAGE_EXPORT_ORDINAL_SIZE + strlen((CHAR8 *)SymName) + 1;
         }
       }
