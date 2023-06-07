@@ -19,7 +19,9 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define HTONLL  _UNIX_EFI_NAME_MANGLE_HTONLL_
 #define NTOHS   _UNIX_EFI_NAME_MANGLE_NTOHS_
 #define HTONS   _UNIX_EFI_NAME_MANGLE_HTOHS_
-#define B0      _UNIX_EFI_NAME_MANGLE_B0_
+#ifndef B0
+  #define B0      _UNIX_EFI_NAME_MANGLE_B0_
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
