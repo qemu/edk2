@@ -26,7 +26,7 @@
 [Sources]
   Host.c
   EmuThunk.c
-  X11GraphicsWindow.c
+#  X11GraphicsWindow.c
   Pthreads.c
   PosixFileSystem.c
   BlockIo.c
@@ -135,10 +135,10 @@
    GCC:*_*_X64_PP_FLAGS == -m64 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
    GCC:*_*_X64_ASM_FLAGS == -m64 -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 
-   GCC:*_*_ARM_DLINK_FLAGS == -o $(BIN_DIR)/Host -mthumb -march=armv7-a -mlittle-endian -mabi=aapcs -L/usr/X11R6/lib
+   GCC:*_*_ARM_DLINK_FLAGS == -o $(BIN_DIR)/Host -mthumb -march=armv7-a -mlittle-endian -mabi=aapcs
    GCC:*_*_ARM_CC_FLAGS == -g -Os -fshort-wchar -fno-builtin -fno-strict-aliasing -Wall -Werror -Wno-array-bounds -fno-common -march=armv7-a -mlittle-endian -mabi=aapcs -fno-short-enums -funsigned-char -fstack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -mword-relocations -flto -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address -mthumb -mfloat-abi=hard -fno-pic -fno-pie -c -include $(DEST_DIR_DEBUG)/AutoGen.h
 
-   GCC:*_*_*_DLINK2_FLAGS == -lpthread -ldl -lXext -lX11
+   GCC:*_*_*_DLINK2_FLAGS == -lpthread -ldl
 
 #
 # Need to do this link via gcc and not ld as the pathing to libraries changes from OS version to OS version

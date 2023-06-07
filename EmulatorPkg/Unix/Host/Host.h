@@ -354,7 +354,7 @@ SecInterruptEnabled (
   );
 
 extern EMU_THUNK_PROTOCOL     gEmuThunkProtocol;
-extern EMU_IO_THUNK_PROTOCOL  gX11ThunkIo;
+//extern EMU_IO_THUNK_PROTOCOL  gX11ThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gPosixFileSystemThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gPthreadThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gBlockIoThunkIo;
