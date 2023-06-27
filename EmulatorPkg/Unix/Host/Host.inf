@@ -33,18 +33,22 @@
   LinuxPacketFilter.c
   BerkeleyPacketFilter.c
   MemoryAllocationLib.c
+  Signal.c
 
 [Sources.X64]
   X64/Gasket.S        # convert between Emu x86_64 ABI and EFI X64 ABI
   X64/SwitchStack.S
+  X64/Signal.c
 
 [Sources.IA32]
   Ia32/Gasket.S       # enforce 16-byte stack alignment for Mac OS X
   Ia32/SwitchStack.c
+  Ia32/Signal.c
 
 [Sources.ARM]
   Arm/Gasket.c
   Arm/SwitchStack.S
+  Arm/Signal.c
   CacheMaintenance.c
 
 [Packages]
@@ -80,6 +84,7 @@
   gEmuBlockIoProtocolGuid
   gEmuSnpProtocolGuid
   gEmuCacheThunkProtocolGuid
+  gEmuSignalThunkProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
 
 [Guids]
@@ -100,6 +105,7 @@
   gEmulatorPkgTokenSpaceGuid.PcdEmuFileSystem
   gEmulatorPkgTokenSpaceGuid.PcdEmuSerialPort
   gEmulatorPkgTokenSpaceGuid.PcdEmuCache
+  gEmulatorPkgTokenSpaceGuid.PcdEmuSignal
   gEmulatorPkgTokenSpaceGuid.PcdEmuNetworkInterface
   gEmulatorPkgTokenSpaceGuid.PcdNetworkPacketFilterSize
 

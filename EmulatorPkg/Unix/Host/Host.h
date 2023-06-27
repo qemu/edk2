@@ -118,6 +118,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Protocol/EmuBlockIo.h>
 #include <Protocol/EmuSnp.h>
 #include <Protocol/EmuCache.h>
+#include <Protocol/EmuSignal.h>
 
 #include <Guid/FileInfo.h>
 #include <Guid/FileSystemInfo.h>
@@ -353,6 +354,25 @@ SecInterruptEnabled (
   VOID
   );
 
+/**
+  Invokes the given signal handler.
+
+  @param[in]        SignalHandler     The signal handler function to be invoked.
+  @param[in]        SignalNumber      The signal number that caused the invocation of the handler.
+  @param[in]        SignalInfo        Signal information.
+  @param[in, out]   ucontext          Machine context data provided by OS.
+
+  @retval None
+
+**/
+VOID
+SecInvokeSignalHandler (
+  IN      EMU_SIGNAL_HANDLER        SignalHandler,
+  IN      UINTN                     SignalNumber,
+  IN      EMU_SIGNAL_HANDLER_INFO   *SignalInfo,
+  IN OUT  void                      *ucontext
+  );
+
 extern EMU_THUNK_PROTOCOL     gEmuThunkProtocol;
 //extern EMU_IO_THUNK_PROTOCOL  gX11ThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gPosixFileSystemThunkIo;
@@ -360,5 +380,6 @@ extern EMU_IO_THUNK_PROTOCOL  gPthreadThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gBlockIoThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gSnpThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gCacheThunkIo;
+extern EMU_IO_THUNK_PROTOCOL  gSignalThunkIo;
 
 #endif

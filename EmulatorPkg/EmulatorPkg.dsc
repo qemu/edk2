@@ -204,6 +204,7 @@
 !if $(SECURE_BOOT_ENABLE) == TRUE
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
 !endif
+  EmuSignalLib|EmulatorPkg/Library/DxeEmuSignalLib/DxeEmuSignalLib.inf
 
 [LibraryClasses.common.DXE_RUNTIME_DRIVER]
 !if $(SECURE_BOOT_ENABLE) == TRUE

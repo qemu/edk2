@@ -1509,4 +1509,62 @@ ASM_PFX(GasketSnpThunkClose):
   leave
   ret
 
+ASM_GLOBAL ASM_PFX(GasketRegisterSignalHandler)
+ASM_PFX(GasketRegisterSignalHandler):
+  pushl %ebp
+  movl  %esp, %ebp
+  subl  $24, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
+  movl  12(%ebp), %eax
+  movl  %eax, 4(%esp)
+  movl  8(%ebp), %eax
+  movl  %eax, (%esp)
+
+  call    ASM_PFX(SecRegisterSignalHandler)
+
+  leave
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketUnregisterSignalHandler)
+ASM_PFX(GasketUnregisterSignalHandler):
+  pushl %ebp
+  movl  %esp, %ebp
+  subl  $24, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
+  movl  8(%ebp), %eax
+  movl  %eax, (%esp)
+
+  call    ASM_PFX(SecUnregisterSignalHandler)
+
+  leave
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketSignalOpen)
+ASM_PFX(GasketSignalOpen):
+  pushl %ebp
+  movl  %esp, %ebp
+  subl  $24, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
+  movl  8(%ebp), %eax
+  movl  %eax, (%esp)
+
+  call    ASM_PFX(SignalOpen)
+
+  leave
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketSignalClose)
+ASM_PFX(GasketSignalClose):
+  pushl %ebp
+  movl  %esp, %ebp
+  subl  $24, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
+  movl  8(%ebp), %eax
+  movl  %eax, (%esp)
+
+  call    ASM_PFX(SignalClose)
+
+  leave
+  ret
+
 

@@ -165,6 +165,7 @@ main (
   // Emulator other Thunks
   //
   AddThunkProtocol (&gPthreadThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuApCount), FALSE);
+  AddThunkProtocol (&gSignalThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuSignal), FALSE);
 #if defined (MDE_CPU_ARM)
   AddThunkProtocol (&gCacheThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuCache), FALSE);
 #endif

@@ -1,0 +1,39 @@
+## @file
+#  Library that provides access to POSIX signals.
+#
+#  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = DxeEmuSignalLib
+  FILE_GUID                      = 20DF0ABF-F506-4378-A6D8-EDEE7743A4F2
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.1
+  LIBRARY_CLASS                  = EmuSignalLib|DXE_CORE DXE_DRIVER DXE_RUNTIME_DRIVER UEFI_DRIVER UEFI_APPLICATION
+  CONSTRUCTOR                    = DxeEmuSignalLibConstructor
+
+#
+#  VALID_ARCHITECTURES           = IA32 X64 ARM
+#
+
+[Sources]
+  DxeEmuSignalLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  EmulatorPkg/EmulatorPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  BaseMemoryLib
+  HobLib
+  EmuThunkLib
+
+[Protocols]
+  gEmuThunkProtocolGuid
+  gEmuSignalThunkProtocolGuid

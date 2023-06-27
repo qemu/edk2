@@ -904,3 +904,63 @@ GasketSnpThunkClose (
 {
   return EmuSnpThunkClose (This);
 }
+
+//
+// Gasket functions for accessing POSIX signals
+//
+
+/**
+  Registers a new signal handler for the given signal number.
+
+  @param[in]        SignalNumber      The signal number to register a callback for.
+  @param[in]        SignalHandler     The signal handler function.
+
+  @retval EFI_SUCCESS                 The signal handler was registered successfully.
+  @retval EFI_INVALID_PARAMETER       SignalHandler is NULL or SignalNumber is is not a invalid signal number.
+
+**/
+EFI_STATUS
+EFIAPI
+GasketRegisterSignalHandler (
+  IN      UINTN                       SignalNumber,
+  IN      EMU_SIGNAL_HANDLER          SignalHandler
+  )
+{
+  return SecRegisterSignalHandler (SignalNumber, SignalHandler);
+}
+
+/**
+  Unregisters a previously registered signal handler.
+
+  @param[in]        SignalNumber      The signal number to unregister the callback for.
+
+  @retval EFI_SUCCESS                 The signal handler was unregistered successfully.
+  @retval EFI_INVALID_PARAMETER       SignalNumber does not have a handler registered or is not a invalid signal number.
+
+**/
+EFI_STATUS
+EFIAPI
+GasketUnregisterSignalHandler (
+  IN      UINTN                       SignalNumber
+  )
+{
+  return SecUnregisterSignalHandler (SignalNumber);
+}
+
+EFI_STATUS
+EFIAPI
+GasketSignalOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  )
+{
+  return SignalOpen (This);
+}
+
+EFI_STATUS
+EFIAPI
+GasketSignalClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  )
+{
+  return SignalClose (This);
+}

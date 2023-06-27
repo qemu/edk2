@@ -23,6 +23,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Protocol/EmuBlockIo.h>
 #include <Protocol/EmuGraphicsWindow.h>
 #include <Protocol/EmuSnp.h>
+#include <Protocol/EmuSignal.h>
 #include "Gasket.h"
 
 UINTN
@@ -1118,6 +1119,52 @@ EmuSnpThunkOpen (
 
 EFI_STATUS
 EmuSnpThunkClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  );
+
+//
+// Gasket functions for accessing POSIX signals
+//
+
+/**
+  Registers a new signal handler for the given signal number.
+
+  @param[in]        SignalNumber      The signal number to register a callback for.
+  @param[in]        SignalHandler     The signal handler function.
+
+  @retval EFI_SUCCESS                 The signal handler was registered successfully.
+  @retval EFI_INVALID_PARAMETER       SignalHandler is NULL or SignalNumber is is not a invalid signal number.
+  @retval EFI_DEVICE_ERROR            sigaction syscall returned an error.
+
+**/
+EFI_STATUS
+SecRegisterSignalHandler (
+  IN      UINTN                       SignalNumber,
+  IN      EMU_SIGNAL_HANDLER          SignalHandler
+  );
+
+/**
+  Unregisters a previously registered signal handler.
+
+  @param[in]        SignalNumber      The signal number to unregister the callback for.
+
+  @retval EFI_SUCCESS                 The signal handler was unregistered successfully.
+  @retval EFI_INVALID_PARAMETER       SignalNumber does not have a handler registered or is not a invalid signal number.
+  @retval EFI_DEVICE_ERROR            signal syscall returned an error.
+
+**/
+EFI_STATUS
+SecUnregisterSignalHandler (
+  IN      UINTN                       SignalNumber
+  );
+
+EFI_STATUS
+SignalOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  );
+
+EFI_STATUS
+SignalClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 

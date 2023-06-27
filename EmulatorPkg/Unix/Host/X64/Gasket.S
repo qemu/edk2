@@ -1643,4 +1643,73 @@ ASM_PFX(GasketSnpThunkClose):
   popq    %rbp
   ret
 
+ASM_GLOBAL ASM_PFX(GasketRegisterSignalHandler)
+ASM_PFX(GasketRegisterSignalHandler):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
+
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+  movq    %rcx, %rdi    // Swizzle args
+  movq    %rdx, %rsi
+
+  call    ASM_PFX(SecRegisterSignalHandler)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketUnregisterSignalHandler)
+ASM_PFX(GasketUnregisterSignalHandler):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
+
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+  movq    %rcx, %rdi    // Swizzle args
+
+  call    ASM_PFX(SecUnregisterSignalHandler)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketSignalOpen)
+ASM_PFX(GasketSignalOpen):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
+
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+  movq    %rcx, %rdi    // Swizzle args
+
+  call    ASM_PFX(SignalOpen)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketSignalClose)
+ASM_PFX(GasketSignalClose):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
+
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+  movq    %rcx, %rdi    // Swizzle args
+
+  call    ASM_PFX(SignalClose)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret
+
 
