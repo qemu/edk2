@@ -63,9 +63,9 @@ SecInvokeSignalHandler (
   context->uc_mcontext.gregs[REG_CR2] = X64Context.Cr2;
   context->uc_mcontext.gregs[REG_EFL] = X64Context.Rflags;
   context->uc_mcontext.gregs[REG_RIP] = X64Context.Rip;
-  (context->uc_mcontext.gregs[REG_CSGSFS] & 0xFFFF) = X64Context.Cs;
-  ((context->uc_mcontext.gregs[REG_CSGSFS] >> 32) & 0xFFFF) = X64Context.Fs;
-  ((context->uc_mcontext.gregs[REG_CSGSFS] >> 16) & 0xFFFF) = X64Context.Gs;
+  context->uc_mcontext.gregs[REG_CSGSFS]  = (X64Context.Cs & 0xFFFF)          |
+                                            (16 << (X64Context.Gs & 0xFFFF))  |
+                                            (32 << (X64Context.Fs & 0xFFFF));
   context->uc_mcontext.gregs[REG_RDI] = X64Context.Rdi;
   context->uc_mcontext.gregs[REG_RSI] = X64Context.Rsi;
   context->uc_mcontext.gregs[REG_RBP] = X64Context.Rbp;
