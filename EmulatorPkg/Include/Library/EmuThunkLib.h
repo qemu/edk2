@@ -13,7 +13,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 extern EMU_THUNK_PROTOCOL  *gEmuThunk;
 
 /**
-  Serach the EMU IO Thunk database for a matching EMU IO Thunk
+  Search the EMU IO Thunk database for a matching EMU IO Thunk
   Protocol instance.
 
   @param  Protocol   Protocol to search for.

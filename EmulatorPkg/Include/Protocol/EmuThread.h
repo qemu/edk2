@@ -2,7 +2,7 @@
   Emulator Thunk to abstract OS services from pure EFI code
 
   Copyright (c) 2010 - 2011, Apple Inc. All rights reserved.<BR>
-  Copyright (c) 2011, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2011 - 2023, Intel Corporation. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -39,7 +39,7 @@ VOID *
 
 typedef
 UINTN
-(EFIAPI *THREAD_THUNK_MUTEX_DISTROY)(
+(EFIAPI *THREAD_THUNK_MUTEX_DESTROY)(
   IN VOID *Mutex
   );
 
@@ -75,7 +75,7 @@ struct _EMU_THREAD_THUNK_PROTOCOL {
   THREAD_THUNK_MUTEX_UNLOCK      MutexUnlock;
   THREAD_THUNK_MUTEX_TRY_LOCK    MutexTryLock;
   THREAD_THUNK_MUTEX_INIT        MutexInit;
-  THREAD_THUNK_MUTEX_DISTROY     MutexDistroy;
+  THREAD_THUNK_MUTEX_DESTROY     MutexDestroy;
   THREAD_THUNK_CREATE_THREAD     CreateThread;
   THREAD_THUNK_EXIT_THREAD       ExitThread;
   THREAD_THUNK_SELF              Self;
