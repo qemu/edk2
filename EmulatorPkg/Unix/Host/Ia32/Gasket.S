@@ -292,6 +292,31 @@ ASM_PFX(GasketSecSetTime):
   ret
 
 
+ASM_GLOBAL ASM_PFX(GasketSecSetMemoryAttributes)
+ASM_PFX(GasketSecSetMemoryAttributes):
+  pushl  %ebp
+  movl  %esp, %ebp
+  subl  $40, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
+  movl  28(%ebp), %eax
+  movl  %eax, 20(%esp)
+  movl  24(%ebp), %eax
+  movl  %eax, 16(%esp)
+  movl  20(%ebp), %eax
+  movl  %eax, 12(%esp)
+  movl  16(%ebp), %eax
+  movl  %eax, 8(%esp)
+  movl  12(%ebp), %eax
+  movl  %eax, 4(%esp)
+  movl  8(%ebp), %eax
+  movl  %eax, (%esp)
+
+  call    ASM_PFX(SecSetMemoryAttributes)
+
+  leave
+  ret
+
+
 ASM_GLOBAL ASM_PFX(GasketSecGetNextProtocol)
 ASM_PFX(GasketSecGetNextProtocol):
   pushl  %ebp

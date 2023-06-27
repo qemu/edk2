@@ -216,6 +216,17 @@ GasketSecSetTimer (
 
 EFI_STATUS
 EFIAPI
+GasketSecSetMemoryAttributes (
+  IN  EFI_PHYSICAL_ADDRESS              BaseAddress,
+  IN  UINT64                            Length,
+  IN  UINT64                            Attributes
+  )
+{
+  return SecSetMemoryAttributes (BaseAddress, Length, Attributes);
+}
+
+EFI_STATUS
+EFIAPI
 GasketSecGetNextProtocol (
   IN  BOOLEAN                EmuBusDriver,
   OUT EMU_IO_THUNK_PROTOCOL  **Instance  OPTIONAL

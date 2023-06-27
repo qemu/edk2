@@ -141,7 +141,7 @@
 !endif
 
 [LibraryClasses.ARM]
-  ArmMmuLib|ArmPkg/Library/ArmMmuNullLib/ArmMmuNullLib.inf
+  ArmMmuLib|EmulatorPkg/Library/PeiEmuArmMmuLib/PeiEmuArmMmuLib.inf
   NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
   # Add support for GCC stack protector

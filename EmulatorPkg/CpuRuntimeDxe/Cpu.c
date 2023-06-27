@@ -1,7 +1,7 @@
 /*++ @file
   Emu driver to produce CPU Architectural Protocol.
 
-Copyright (c) 2006 - 2012, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2006 - 2023, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2011 - 2012, Apple Inc. All rights reserved.
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -390,10 +390,7 @@ EmuSetMemoryAttributes (
     return EFI_INVALID_PARAMETER;
   }
 
-  //
-  // Do nothing for Nt32 emulation
-  //
-  return EFI_UNSUPPORTED;
+  return gEmuThunk->SetMemoryAttributes (BaseAddress, Length, Attributes);
 }
 
 /**

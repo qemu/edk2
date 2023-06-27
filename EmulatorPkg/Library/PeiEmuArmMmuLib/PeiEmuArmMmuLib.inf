@@ -1,0 +1,42 @@
+## @file
+#  Module Information description file for PEI EMU ARM MMU Library
+#
+#  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010017
+  BASE_NAME                      = PeiEmuArmMmuLib
+  FILE_GUID                      = 3F3F0192-4A30-4235-A9E4-E130CBC6F3FF
+  VERSION_STRING                 = 1.0
+  MODULE_TYPE                    = PEIM
+  LIBRARY_CLASS                  = ArmMmuLib|PEI_CORE PEIM
+#
+# The following information is for reference only and not required by the build tools.
+#
+# VALID_ARCHITECTURES ARM
+#
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  BaseMemoryLib
+  PeiServicesLib
+
+[Sources]
+  PeiEmuArmMmuLib.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  MdePkg/MdePkg.dec
+  EmulatorPkg/EmulatorPkg.dec
+
+[Pcd]
+
+[Ppis]
+  gEmuThunkPpiGuid                          # PPI ALWAYS_CONSUMED
+
+[Protocols]
+  gEmuCacheThunkProtocolGuid

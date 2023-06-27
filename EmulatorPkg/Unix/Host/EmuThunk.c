@@ -9,7 +9,7 @@
   it may cause the table to be initialized with the members at the end being
   set to zero. This is bad as jumping to zero will crash.
 
-Copyright (c) 2004 - 2019, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2023, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -381,6 +381,63 @@ SecSetTime (
   return;
 }
 
+/**
+  This function modifies the attributes for the memory region specified by BaseAddress and
+  Length from their current attributes to the attributes specified by Attributes. Since
+  this is a user mode application, memory cachability attributes are ignored. Only memory
+  protection attributes are interpreted.
+
+  @param  BaseAddress      The physical address that is the start address of a memory region.
+  @param  Length           The size in bytes of the memory region.
+  @param  Attributes       The bit mask of attributes to set for the memory region.
+
+  @retval EFI_SUCCESS           The attributes were set for the memory region.
+  @retval EFI_ACCESS_DENIED     The attributes for the memory resource range specified by
+                                BaseAddress and Length cannot be modified.
+  @retval EFI_INVALID_PARAMETER Length is zero.
+                                Attributes specified an illegal combination of attributes that
+                                cannot be set together.
+  @retval EFI_OUT_OF_RESOURCES  There are not enough system resources to modify the attributes of
+                                the memory resource range.
+  @retval EFI_UNSUPPORTED       The processor does not support one or more bytes of the memory
+                                resource range specified by BaseAddress and Length.
+                                The bit mask of attributes is not support for the memory resource
+                                range specified by BaseAddress and Length.
+
+**/
+EFI_STATUS
+EFIAPI
+SecSetMemoryAttributes (
+  IN  EFI_PHYSICAL_ADDRESS              BaseAddress,
+  IN  UINT64                            Length,
+  IN  UINT64                            Attributes
+  )
+{
+  int Protection;
+
+  Protection = PROT_NONE;
+  if ((Attributes & EFI_MEMORY_RP) == 0) {
+    Protection |= PROT_READ;
+  }
+  if ((Attributes & EFI_MEMORY_RO) == 0) {
+    Protection |= PROT_WRITE;
+  }
+  if ((Attributes & EFI_MEMORY_XP) == 0) {
+    Protection |= PROT_EXEC;
+  }
+  if (mprotect ((void *)(UINTN) BaseAddress, (size_t) Length, Protection) != 0) {
+    switch (errno) {
+      case EACCES:
+        return EFI_ACCESS_DENIED;
+      case EINVAL:
+        return EFI_INVALID_PARAMETER;
+      case ENOMEM:
+        return EFI_OUT_OF_RESOURCES;
+    }
+  }
+  return EFI_SUCCESS;
+}
+
 EFI_STATUS
 SecGetNextProtocol (
   IN  BOOLEAN                EmuBusDriver,
@@ -412,6 +469,7 @@ EMU_THUNK_PROTOCOL  gEmuThunkProtocol = {
   GasketSecGetTime,
   GasketSecSetTime,
   GasketSecSetTimer,
+  GasketSecSetMemoryAttributes,
   GasketSecGetNextProtocol
 };
 

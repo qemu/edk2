@@ -337,6 +337,26 @@ ASM_PFX(GasketSecSetTime):
   ret
 
 
+ASM_GLOBAL ASM_PFX(GasketSecSetMemoryAttributes)
+ASM_PFX(GasketSecSetMemoryAttributes):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
+
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+  movq    %rcx, %rdi    // Swizzle args
+  movq    %rdx, %rsi
+  movq    %r8,  %rdx
+
+  call    ASM_PFX(SecSetMemoryAttributes)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret
+
+
 ASM_GLOBAL ASM_PFX(GasketSecGetNextProtocol)
 ASM_PFX(GasketSecGetNextProtocol):
   pushq   %rbp            // stack frame is for the debugger

@@ -2,6 +2,7 @@
   Emulator Thunk to abstract OS services from pure EFI code
 
   Copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
+  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -172,6 +173,38 @@ VOID
   );
 
 /**
+  This function modifies the attributes for the memory region specified by BaseAddress and
+  Length from their current attributes to the attributes specified by Attributes. Since
+  this is a user mode application, memory cachability attributes are ignored. Only memory
+  protection attributes are interpreted.
+
+  @param  BaseAddress      The physical address that is the start address of a memory region.
+  @param  Length           The size in bytes of the memory region.
+  @param  Attributes       The bit mask of attributes to set for the memory region.
+
+  @retval EFI_SUCCESS           The attributes were set for the memory region.
+  @retval EFI_ACCESS_DENIED     The attributes for the memory resource range specified by
+                                BaseAddress and Length cannot be modified.
+  @retval EFI_INVALID_PARAMETER Length is zero.
+                                Attributes specified an illegal combination of attributes that
+                                cannot be set together.
+  @retval EFI_OUT_OF_RESOURCES  There are not enough system resources to modify the attributes of
+                                the memory resource range.
+  @retval EFI_UNSUPPORTED       The processor does not support one or more bytes of the memory
+                                resource range specified by BaseAddress and Length.
+                                The bit mask of attributes is not support for the memory resource
+                                range specified by BaseAddress and Length.
+
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EMU_SET_MEMORY_ATTRIBUTES)(
+  IN  EFI_PHYSICAL_ADDRESS              BaseAddress,
+  IN  UINT64                            Length,
+  IN  UINT64                            Attributes
+  );
+
+/**
   Enumerates the current set of protocol instances that abstract OS services from EFI.
 
   A given protocol can have multiple instances. Usually a protocol is configured via a
@@ -234,6 +267,8 @@ struct _EMU_THUNK_PROTOCOL {
   EMU_GET_TIME                         GetTime;
   EMU_SET_TIME                         SetTime;
   EMU_SET_TIMER                        SetTimer;
+
+  EMU_SET_MEMORY_ATTRIBUTES            SetMemoryAttributes;
 
   ///
   /// Generic System Services
