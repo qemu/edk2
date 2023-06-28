@@ -14,37 +14,39 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/HobLib.h>
 
-#include <Library/EmuThunkLib.h>
-
+#include <Protocol/EmuThunk.h>
 #include <Protocol/EmuIoThunk.h>
 #include <Protocol/EmuCache.h>
 
-EMU_CACHE_THUNK_PROTOCOL   *gEmuCache = NULL;
-
-/**
-  The constructor function caches the pointer of EMU cache protocol.
-
-  @param  ImageHandle   The firmware allocated handle for the EFI image.
-  @param  SystemTable   A pointer to the EFI System Table.
-
-  @retval EFI_SUCCESS   The constructor always returns EFI_SUCCESS.
-
-**/
 EFI_STATUS
 EFIAPI
-DxeEmuCacheLibConstructor (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
+DxeGetCacheThunkProtocol (
+  OUT      EMU_CACHE_THUNK_PROTOCOL   **EmuCache
   )
 {
+  EFI_HOB_GUID_TYPE       *GuidHob;
+  EMU_THUNK_PROTOCOL      *Thunk;
   EMU_IO_THUNK_PROTOCOL   *EmuIoThunk;
   EFI_STATUS              Status;
+
+  //
+  // Get Unix Thunk Protocol so we can retrieve I/O Thunk Protocols
+  //
+  GuidHob = GetFirstGuidHob (&gEmuThunkProtocolGuid);
+  if (GuidHob == NULL) {
+    return EFI_NOT_FOUND;
+  }
+
+  Thunk = (EMU_THUNK_PROTOCOL *)(*(UINTN *)(GET_GUID_HOB_DATA (GuidHob)));
+  if (Thunk == NULL) {
+    return EFI_NOT_FOUND;
+  }
 
   //
   // Locate the I/O Thunk Protocol representing the Cache Thunk Protocol
   //
   for (Status = EFI_SUCCESS, EmuIoThunk = NULL; !EFI_ERROR (Status); ) {
-    Status = gEmuThunk->GetNextProtocol (FALSE, &EmuIoThunk);
+    Status = Thunk->GetNextProtocol (FALSE, &EmuIoThunk);
     if (EFI_ERROR (Status)) {
       break;
     }
@@ -58,7 +60,7 @@ DxeEmuCacheLibConstructor (
         if (EFI_ERROR (Status)) {
             return Status;
         }
-        gEmuCache = (EMU_CACHE_THUNK_PROTOCOL *) EmuIoThunk->Interface;
+        *EmuCache = (EMU_CACHE_THUNK_PROTOCOL *) EmuIoThunk->Interface;
         return EFI_SUCCESS;
       }
     }
@@ -78,8 +80,13 @@ InvalidateInstructionCache (
   VOID
   )
 {
-  ASSERT (gEmuCache != NULL);
-  gEmuCache->InvalidateInstructionCache ();
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    EmuCache->InvalidateInstructionCache ();
+  }
 }
 
 /**
@@ -114,8 +121,14 @@ InvalidateInstructionCacheRange (
   IN      UINTN  Length
   )
 {
-  ASSERT (gEmuCache != NULL);
-  return gEmuCache->InvalidateInstructionCacheRange (Address, Length);
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    return EmuCache->InvalidateInstructionCacheRange (Address, Length);
+  }
+  return NULL;
 }
 
 /**
@@ -134,8 +147,13 @@ WriteBackInvalidateDataCache (
   VOID
   )
 {
-  ASSERT (gEmuCache != NULL);
-  gEmuCache->WriteBackInvalidateDataCache ();
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    EmuCache->WriteBackInvalidateDataCache ();
+  }
 }
 
 /**
@@ -171,8 +189,14 @@ WriteBackInvalidateDataCacheRange (
   IN      UINTN  Length
   )
 {
-  ASSERT (gEmuCache != NULL);
-  return gEmuCache->WriteBackInvalidateDataCacheRange (Address, Length);
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    return EmuCache->WriteBackInvalidateDataCacheRange (Address, Length);
+  }
+  return NULL;
 }
 
 /**
@@ -191,8 +215,13 @@ WriteBackDataCache (
   VOID
   )
 {
-  ASSERT (gEmuCache != NULL);
-  gEmuCache->WriteBackDataCache ();
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    EmuCache->WriteBackDataCache ();
+  }
 }
 
 /**
@@ -227,8 +256,14 @@ WriteBackDataCacheRange (
   IN      UINTN  Length
   )
 {
-  ASSERT (gEmuCache != NULL);
-  return gEmuCache->WriteBackDataCacheRange (Address, Length);
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    return EmuCache->WriteBackDataCacheRange (Address, Length);
+  }
+  return NULL;
 }
 
 /**
@@ -248,8 +283,13 @@ InvalidateDataCache (
   VOID
   )
 {
-  ASSERT (gEmuCache != NULL);
-  gEmuCache->InvalidateDataCache ();
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    EmuCache->InvalidateDataCache ();
+  }
 }
 
 /**
@@ -286,6 +326,12 @@ InvalidateDataCacheRange (
   IN      UINTN  Length
   )
 {
-  ASSERT (gEmuCache != NULL);
-  return gEmuCache->InvalidateDataCacheRange (Address, Length);
+  EMU_CACHE_THUNK_PROTOCOL   *EmuCache;
+  EFI_STATUS                 Status;
+
+  Status = DxeGetCacheThunkProtocol (&EmuCache);
+  if (!EFI_ERROR (Status) && EmuCache != NULL) {
+    return EmuCache->InvalidateDataCacheRange (Address, Length);
+  }
+  return NULL;
 }
