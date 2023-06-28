@@ -278,7 +278,7 @@ QueryPerformanceCounter (
   struct timespec  ts1;
 
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts1);
-  return (ts1.tv_nsec + (ts1.tv_sec * 1000000000)); #endif
+  return (ts1.tv_nsec + (ts1.tv_sec * 1000000000));
  #endif
 }
 
