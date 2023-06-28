@@ -24,6 +24,11 @@ DxeGetCacheThunkProtocol (
   OUT      EMU_CACHE_THUNK_PROTOCOL   **EmuCache
   )
 {
+  //
+  // Note: Because the HOB list is not available during early initialization of
+  //       DxeMain we need to delay enumerating the HOB list and not use a
+  //       LibraryClass constructor method.
+  //
   EFI_HOB_GUID_TYPE       *GuidHob;
   EMU_THUNK_PROTOCOL      *Thunk;
   EMU_IO_THUNK_PROTOCOL   *EmuIoThunk;
