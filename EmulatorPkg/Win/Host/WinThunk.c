@@ -540,6 +540,17 @@ SecSetTime (
   }
 }
 
+EFI_STATUS
+EFIAPI
+SecSetMemoryAttributes (
+  IN  EFI_PHYSICAL_ADDRESS              BaseAddress,
+  IN  UINT64                            Length,
+  IN  UINT64                            Attributes
+  )
+{
+  return EFI_SUCCESS;
+}
+
 EMU_THUNK_PROTOCOL  gEmuThunkProtocol = {
   SecWriteStdErr,
   SecConfigStdIn,
@@ -562,6 +573,7 @@ EMU_THUNK_PROTOCOL  gEmuThunkProtocol = {
   SecGetTime,
   SecSetTime,
   SecSetTimer,
+  SecSetMemoryAttributes,
   GetNextThunkProtocol
 };
 
