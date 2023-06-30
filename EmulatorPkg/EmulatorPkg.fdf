@@ -222,6 +222,8 @@ INF  ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf
 !endif
 INF  ShellPkg/Application/Shell/Shell.inf
 
+#INF X86EmulatorPkg/X86Emulator.inf
+
 [Rule.Common.SEC]
   FILE SEC = $(NAMED_GUID)  {
     PE32     PE32    Align=Auto     $(INF_OUTPUT)/$(MODULE_NAME).efi

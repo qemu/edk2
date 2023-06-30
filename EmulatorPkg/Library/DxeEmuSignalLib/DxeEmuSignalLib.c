@@ -14,10 +14,10 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/HobLib.h>
 
-#include <Protocol/EmuThunk.h>
-#include <Protocol/EmuIoThunk.h>
-
+#include <Library/EmuThunkLib.h>
 #include <Library/EmuSignalLib.h>
+
+#include <Protocol/EmuIoThunk.h>
 
 EMU_SIGNAL_THUNK_PROTOCOL   *gEmuSignal = NULL;
 

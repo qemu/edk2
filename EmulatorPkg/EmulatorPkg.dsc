@@ -507,6 +507,8 @@
 !endif
 !include RedfishPkg/Redfish.dsc.inc
 
+  #X86EmulatorPkg/X86Emulator.inf
+
 [BuildOptions]
   #
   # Disable deprecated APIs.

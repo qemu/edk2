@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2017, Linaro, Ltd. <ard.biesheuvel@linaro.org>
+// Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -14,17 +15,12 @@
 #include <Library/PeCoffLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiDriverEntryPoint.h>
+#include <Library/EmuSignalLib.h>
 
 #include <Protocol/Cpu.h>
 #include <Protocol/CpuIo2.h>
 #include <Protocol/DebugSupport.h>
 #include <Protocol/PeCoffImageEmulator.h>
-
-#ifdef MDE_CPU_AARCH64
-#define X86_EMU_EXCEPTION_TYPE    EXCEPT_AARCH64_SYNCHRONOUS_EXCEPTIONS
-#else
-#error
-#endif
 
 typedef struct {
   LIST_ENTRY            Link;
@@ -32,11 +28,29 @@ typedef struct {
   UINT64                ImageSize;
 } X86_IMAGE_RECORD;
 
+/**
+  Callback that is invoked when the OS sends the SIGSEGV signal,
+  which may indicate that we are attempting to execute x86 code.
+
+  @param[in]        SignalCode        A value indicating why this signal was sent.
+  @param[in]        SignalAddress     Memory address that caused the fault.
+
+  @retval None
+
+**/
 VOID
 EFIAPI
-X86InterpreterSyncExceptionCallback (
-  IN     EFI_EXCEPTION_TYPE   ExceptionType,
-  IN OUT EFI_SYSTEM_CONTEXT   SystemContext
+X86EmulatorSignalHandler (
+  IN      UINTN                       SignalNumber,
+  IN OUT  EMU_SIGNAL_HANDLER_INFO     *SignalInfo
+  );
+
+UINT64
+X86EmulatorVmEntry (
+  IN  UINTN               Pc,
+  IN  UINTN               *Args,
+  IN  X86_IMAGE_RECORD    *Record,
+  IN  UINTN               Lr
   );
 
 X86_IMAGE_RECORD*

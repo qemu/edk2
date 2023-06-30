@@ -1,6 +1,7 @@
 ## @file
 #
 #  Copyright (c) 2017, Linaro, Ltd. <ard.biesheuvel@linaro.org>
+#  Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -18,7 +19,7 @@
   ENTRY_POINT                    = X86EmulatorDxeEntryPoint
 
 #
-#  VALID_ARCHITECTURES           = AARCH64
+#  VALID_ARCHITECTURES           = ARM
 #
 
 [Sources]
@@ -42,13 +43,13 @@
   qemu/translate-all.c
   main.c
 
-[Sources.AARCH64]
-  AARCH64/X86Emulator.c
-  AARCH64/X86EmulatorThunk.S
+[Sources.ARM]
+  ARM/X86EmulatorSignal.c
 
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
+  EmulatorPkg/EmulatorPkg.dec
 
 [Packages.AARCH64]
   ArmPkg/ArmPkg.dec
@@ -65,6 +66,7 @@
   UefiDriverEntryPoint
   PrintLib
   TimerLib
+  EmuSignalLib
 
 [LibraryClasses.AARCH64]
   DefaultExceptionHandlerLib
@@ -77,6 +79,10 @@
 [Depex]
   gEfiCpuArchProtocolGuid AND gEfiCpuIo2ProtocolGuid
 
-[BuildOptions]
+[BuildOptions.AARCH64]
   GCC:*_*_*_CC_FLAGS = -ffreestanding -mcmodel=small -U_FORTIFY_SOURCE -Wno-unused-function
+  GCC:*_*_*_DLINK_FLAGS = -Wl,--defsym=_setjmp=SetJump -z common-page-size=0x1000
+
+[BuildOptions.ARM]
+  GCC:*_*_*_CC_FLAGS == -g -Os -fshort-wchar -fno-builtin -fno-strict-aliasing -Wall -Werror -Wno-array-bounds -include AutoGen.h -fno-common -mlittle-endian -mabi=aapcs -fno-short-enums -funsigned-char -ffunction-sections -fdata-sections -fomit-frame-pointer -Wno-address -mthumb -march=armv7-a -mfloat-abi=hard -fno-pic -fno-pie -ffreestanding -U_FORTIFY_SOURCE -Wno-unused-function
   GCC:*_*_*_DLINK_FLAGS = -Wl,--defsym=_setjmp=SetJump -z common-page-size=0x1000

@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2017, Linaro, Ltd. <ard.biesheuvel@linaro.org>
+// Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -202,10 +203,10 @@ cpu_outl (
 
 UINT64
 X86EmulatorVmEntry (
-  IN  UINT64              Pc,
-  IN  UINT64              *Args,
+  IN  UINTN               Pc,
+  IN  UINTN               *Args,
   IN  X86_IMAGE_RECORD    *Record,
-  IN  UINT64              Lr
+  IN  UINTN               Lr
   )
 {
   if (!gX86EmulatorIsInitialized) {
@@ -213,7 +214,7 @@ X86EmulatorVmEntry (
     gX86EmulatorIsInitialized = TRUE;
   }
 
-  return run_x86_func((void*)Pc, (uint64_t *)Args);
+  return run_x86_func((void*) Pc, (uint64_t *)Args);//@todo run_x86_func() needs to take a UINTN Args array
 }
 
 extern EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL **stdout;
@@ -249,9 +250,7 @@ X86EmulatorDxeEntryPoint (
                   (VOID **)&mCpuIo2);
   ASSERT_EFI_ERROR(Status);
 
-  Status = mCpu->RegisterInterruptHandler (mCpu, X86_EMU_EXCEPTION_TYPE,
-                   &X86InterpreterSyncExceptionCallback);
-
+  Status = EmuRegisterSignalHandler (EMU_SIGSEGV, X86EmulatorSignalHandler);
   if (EFI_ERROR (Status)) {
     return Status;
   }
@@ -261,7 +260,7 @@ X86EmulatorDxeEntryPoint (
                   EFI_NATIVE_INTERFACE,
                   &mX86EmulatorProtocol);
   if (EFI_ERROR (Status)) {
-    mCpu->RegisterInterruptHandler (mCpu, X86_EMU_EXCEPTION_TYPE, NULL);
+    EmuUnregisterSignalHandler (EMU_SIGSEGV);
   }
 
   stdout = &gST->ConOut;
