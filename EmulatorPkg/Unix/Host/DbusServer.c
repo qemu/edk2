@@ -37,9 +37,9 @@ const char *server_introspection_xml =
     "    </method>\n"
     "  </interface>\n"
 
-    "  <interface name='org.Intel.PrmDispatchAPI'>\n"
+    "  <interface name='com.Intel.PrmDispatch'>\n"
     "    <property name='Version' type='s' access='read' />\n"
-    "    <method name='InstallPrmPackageRequest'>\n"
+    "    <method name='InstallPrmPackage'>\n"
     "       <arg type='ay' direction='in' name='PrmPackage' />\n"
     "       <arg type='u' direction='out' name='EfiStatus' />\n"
     "    </method>\n"
@@ -197,7 +197,7 @@ DBusHandlerResult server_message_handler(DBusConnection *conn, DBusMessage *mess
     dbus_message_unref(reply);
     return result;
   }
-  else if (dbus_message_is_method_call(message, "org.Intel.PrmDispatchAPI", "Quit"))
+  else if (dbus_message_is_method_call(message, "com.Intel.PrmDispatch", "Quit"))
   {
     /*
      * Quit() has no return values but a METHOD_RETURN
@@ -261,7 +261,7 @@ int run_server(void)
 		goto fail;
 	}
 
-	rv = dbus_bus_request_name(conn, "org.Intel.PrmDispatchAPIServer", DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
+	rv = dbus_bus_request_name(conn, "com.Intel.PrmDispatchServer", DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
 	if (rv != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
 		fprintf(stderr, "Failed to request name on bus: %s\n", err.message);
 		goto fail;
