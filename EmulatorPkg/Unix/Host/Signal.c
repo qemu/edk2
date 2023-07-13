@@ -11,6 +11,7 @@
 STATIC EMU_SIGNAL_HANDLER  mSigIllHandler = NULL;
 STATIC EMU_SIGNAL_HANDLER  mSigBusHandler = NULL;
 STATIC EMU_SIGNAL_HANDLER  mSigSegvHandler = NULL;
+STATIC EMU_SIGNAL_HANDLER  mSigTermHandler = NULL;
 
 /**
   Converts from emulator thunk signal numbers to UNIX signal numbers. Emulator
@@ -50,6 +51,12 @@ EmuSignalNumberToUnix (
       *signum = SIGSEGV;
       if (SignalHandler != NULL) {
         *SignalHandler = &mSigSegvHandler;
+      }
+      break;
+    case EMU_SIGTERM:
+      *signum = SIGTERM;
+      if (SignalHandler != NULL) {
+        *SignalHandler = &mSigTermHandler;
       }
       break;
     default:
@@ -121,6 +128,12 @@ UnixSignalNumberToEmu (
       }
       if (SignalHandler != NULL) {
         *SignalHandler = &mSigSegvHandler;
+      }
+      break;
+    case SIGTERM:
+      *SignalNumber = EMU_SIGTERM;
+      if (SignalHandler != NULL) {
+        *SignalHandler = &mSigTermHandler;
       }
       break;
     default:

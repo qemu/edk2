@@ -17,6 +17,7 @@
 #define EMU_SIGILL      4     ///< Illegal Instruction
 #define EMU_SIGBUS      7     ///< Incorrect memory access
 #define EMU_SIGSEGV     11    ///< Invalid memory reference
+#define EMU_SIGTERM     15    ///< Terminate process.
 
 ///
 /// Signal Codes
