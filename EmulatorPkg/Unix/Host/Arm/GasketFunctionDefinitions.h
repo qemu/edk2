@@ -1168,4 +1168,28 @@ SignalClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
+/**
+  Get IsSigTermSignaled value.
+
+  @retval        Value             current IsSigTermSignaled value.
+
+**/
+UINT32
+EFIAPI
+GetIsSigTermSignaled (
+  VOID
+  );
+
+/**
+  Set IsSigTermSignaled value.
+
+  @param[in]        Value             desired IsSigTermSignaled value.
+
+**/
+VOID
+EFIAPI
+SetIsSigTermSignaled (
+  IN      UINT32   value
+  );
+
 #endif

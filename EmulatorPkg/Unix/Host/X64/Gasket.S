@@ -1712,4 +1712,35 @@ ASM_PFX(GasketSignalClose):
   popq    %rbp
   ret
 
+ASM_GLOBAL ASM_PFX(GasketGetIsSigTermSignaled)
+ASM_PFX(GasketGetIsSigTermSignaled):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
 
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+
+  call    ASM_PFX(GetIsSigTermSignaled)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketSetIsSigTermSignaled)
+ASM_PFX(GasketSetIsSigTermSignaled):
+  pushq   %rbp            // stack frame is for the debugger
+  movq    %rsp, %rbp
+
+  pushq   %rsi          // %rsi & %rdi are volatile in Unix and callee-save in EFI ABI
+  pushq   %rdi
+
+  movq    %rcx, %rdi    // Swizzle args
+
+  call    ASM_PFX(SetIsSigTermSignaled)
+
+  popq    %rdi          // restore state
+  popq    %rsi
+  popq    %rbp
+  ret

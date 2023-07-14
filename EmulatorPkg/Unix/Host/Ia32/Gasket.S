@@ -1567,4 +1567,28 @@ ASM_PFX(GasketSignalClose):
   leave
   ret
 
+ASM_GLOBAL ASM_PFX(GasketGetIsSigTermSignaled)
+ASM_PFX(GasketGetIsSigTermSignaled):
+  pushl %ebp
+  movl  %esp, %ebp
+  subl  $24, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
 
+  call    ASM_PFX(GetIsSigTermSignaled)
+
+  leave
+  ret
+
+ASM_GLOBAL ASM_PFX(GasketSetIsSigTermSignaled)
+ASM_PFX(GasketSetIsSigTermSignaled):
+  pushl %ebp
+  movl  %esp, %ebp
+  subl  $24, %esp      // sub extra 16 from the stack for alignment
+  and   $-16, %esp    // stack needs to end in 0xFFFFFFF0 before call
+  movl  8(%ebp), %eax
+  movl  %eax, (%esp)
+
+  call    ASM_PFX(SetIsSigTermSignaled)
+
+  leave
+  ret

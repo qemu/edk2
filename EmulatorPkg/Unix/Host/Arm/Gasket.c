@@ -964,3 +964,21 @@ GasketSignalClose (
 {
   return SignalClose (This);
 }
+
+UINT32
+EFIAPI
+GasketGetIsSigTermSignaled (
+  VOID
+  )
+{
+  return GetIsSigTermSignaled ();
+}
+
+VOID
+EFIAPI
+GasketSetIsSigTermSignaled (
+  IN      UINT32   value
+  )
+{
+  return SetIsSigTermSignaled (value);
+}

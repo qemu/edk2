@@ -13,6 +13,9 @@ STATIC EMU_SIGNAL_HANDLER  mSigBusHandler = NULL;
 STATIC EMU_SIGNAL_HANDLER  mSigSegvHandler = NULL;
 STATIC EMU_SIGNAL_HANDLER  mSigTermHandler = NULL;
 
+UINT32  mIsSigTermSignaled = 0;
+VOID    *mMutex = NULL;
+
 /**
   Converts from emulator thunk signal numbers to UNIX signal numbers. Emulator
   thunk signal numbers exist so that the only place platform-specific UNIX
@@ -261,9 +264,74 @@ SecUnregisterSignalHandler (
   return EFI_SUCCESS;
 }
 
+UINTN
+EFIAPI
+PthreadMutexLock (
+  IN VOID  *Mutex
+  );
+
+UINTN
+EFIAPI
+PthreadMutexUnLock (
+  IN VOID  *Mutex
+  );
+
+VOID *
+PthreadMutexInit (
+  IN VOID
+  );
+
+/**
+  Get IsSigTermSignaled value.
+
+  @retval        Value             current IsSigTermSignaled value.
+
+**/
+UINT32
+EFIAPI
+GetIsSigTermSignaled (
+  VOID
+  )
+{
+  UINT32           value;
+
+  if (mMutex == NULL) {
+    mMutex = PthreadMutexInit();
+  }
+  PthreadMutexLock(mMutex);
+  value = mIsSigTermSignaled;
+  PthreadMutexUnLock(mMutex);
+
+  return value;
+}
+
+/**
+  Set IsSigTermSignaled value.
+
+  @param[in]        Value             desired IsSigTermSignaled value.
+
+**/
+VOID
+EFIAPI
+SetIsSigTermSignaled (
+  IN      UINT32   value
+  )
+{
+  if (mMutex == NULL) {
+    mMutex = PthreadMutexInit();
+  }
+  PthreadMutexLock(mMutex);
+  mIsSigTermSignaled = value;
+  PthreadMutexUnLock(mMutex);
+
+  return;
+}
+
 EMU_SIGNAL_THUNK_PROTOCOL  gEmuSignalThunk = {
   GasketRegisterSignalHandler,
-  GasketUnregisterSignalHandler
+  GasketUnregisterSignalHandler,
+  GasketGetIsSigTermSignaled,
+  GasketSetIsSigTermSignaled
 };
 
 EFI_STATUS

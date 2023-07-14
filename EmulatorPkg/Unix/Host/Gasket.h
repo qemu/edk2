@@ -700,4 +700,28 @@ GasketSignalClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
+/**
+  Get IsSigTermSignaled value.
+
+  @retval        value             current IsSigTermSignaled value.
+
+**/
+UINT32
+EFIAPI
+GasketGetIsSigTermSignaled (
+  VOID
+  );
+
+/**
+  Set IsSigTermSignaled value.
+
+  @param[in]        value             desired IsSigTermSignaled value.
+
+**/
+VOID
+EFIAPI
+GasketSetIsSigTermSignaled (
+  IN      UINT32    value
+  );
+
 #endif

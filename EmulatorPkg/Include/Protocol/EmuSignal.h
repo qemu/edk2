@@ -87,10 +87,34 @@ EFI_STATUS
   IN      UINTN                       SignalNumber
   );
 
+/**
+  Get IsSigTermSignaled value.
+
+  @retval IsSigTermSignaled value
+
+**/
+typedef
+UINT32
+(EFIAPI *EMU_GET_IS_SIGTERM_SIGNALED)(
+  VOID
+  );
+
+/**
+  Set IsSigTermSignaled value.
+  @param[in]  value for IsSigTermSignaled
+
+**/
+typedef
+VOID
+(EFIAPI *EMU_SET_IS_SIGTERM_SIGNALED)(
+  IN      UINT32                       value
+  );
 
 struct _EMU_SIGNAL_THUNK_PROTOCOL {
   EMU_SIGNAL_REGISTER_SIGNAL_HANDLER                          RegisterSignalHandler;
   EMU_SIGNAL_UNREGISTER_SIGNAL_HANDLER                        UnregisterSignalHandler;
+  EMU_GET_IS_SIGTERM_SIGNALED                                 GetIsSigTermSignaled;
+  EMU_SET_IS_SIGTERM_SIGNALED                                 SetIsSigTermSignaled;
 };
 
 #endif

@@ -110,3 +110,41 @@ EmuUnregisterSignalHandler (
   ASSERT (gEmuSignal != NULL);
   return gEmuSignal->UnregisterSignalHandler (SignalNumber);
 }
+
+/**
+  Get IsSigTermSignaled value.
+
+  @retval        Value             current IsSigTermSignaled value.
+
+**/
+UINT32
+EFIAPI
+EmuGetIsSigTermSignaled (
+  VOID
+  )
+{
+  UINT32           value;
+
+  ASSERT (gEmuSignal != NULL);
+  value = gEmuSignal->GetIsSigTermSignaled();
+
+  return value;
+}
+
+/**
+  Set IsSigTermSignaled value.
+
+  @param[in]        Value             desired IsSigTermSignaled value.
+
+**/
+VOID
+EFIAPI
+EmuSetIsSigTermSignaled (
+  IN      UINT32                       value
+  )
+{
+  ASSERT (gEmuSignal != NULL);
+  gEmuSignal->SetIsSigTermSignaled(value);
+
+  return;
+}

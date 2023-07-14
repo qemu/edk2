@@ -47,4 +47,27 @@ EmuUnregisterSignalHandler (
   IN      UINTN                       SignalNumber
   );
 
+/**
+  Get IsSigTermSignaled value.
+
+  @retval        Value             current IsSigTermSignaled value.
+
+**/
+UINT32
+EFIAPI
+EmuGetIsSigTermSignaled (
+  VOID
+  );
+
+/**
+  Set IsSigTermSignaled value.
+
+  @param[in]        Value             desired IsSigTermSignaled value.
+
+**/
+VOID
+EFIAPI
+EmuSetIsSigTermSignaled (
+  IN      UINT32                       value
+  );
 #endif
