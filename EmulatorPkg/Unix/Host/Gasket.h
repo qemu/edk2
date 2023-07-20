@@ -690,13 +690,13 @@ GasketUnregisterSignalHandler (
 
 EFI_STATUS
 EFIAPI
-GasketSignalOpen (
+GasketEmuSignalThunkOpen (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
 EFI_STATUS
 EFIAPI
-GasketSignalClose (
+GasketEmuSignalThunkClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
@@ -722,6 +722,66 @@ VOID
 EFIAPI
 GasketSetIsSigTermSignaled (
   IN      UINT32    value
+  );
+
+/**
+  Acquire the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was acquired successfully.
+  @retval EFI_TIMEOUT                 Acquiring the mailbox failed.
+
+**/
+EFI_STATUS
+GasketEmuDbusAcquireMailbox (
+  VOID
+  );
+
+/**
+  Release the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was released successfully.
+  @retval EFI_TIMEOUT                 Releasing the mailbox failed.
+
+**/
+EFI_STATUS
+GasketEmuDbusReleaseMailbox (
+  VOID
+  );
+
+/**
+  Wait for a new message to be stored in the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 A new message is in the mailbox
+  @retval EFI_TIMEOUT                 Waiting for a new message failed.
+
+**/
+EFI_STATUS
+GasketEmuDbusWaitForMessage (
+  VOID
+  );
+
+/**
+  Signal that the message has been successfully processed and the results
+  are waiting in the PRM Dispatch Service Mailbox
+
+  @retval None
+
+**/
+VOID
+GasketEmuDbusMessageResponseReady (
+  VOID
+  );
+
+EFI_STATUS
+EFIAPI
+GasketEmuDbusThunkOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  );
+
+EFI_STATUS
+EFIAPI
+GasketEmuDbusThunkClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
 #endif

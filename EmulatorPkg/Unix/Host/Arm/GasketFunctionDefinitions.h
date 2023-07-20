@@ -1158,16 +1158,6 @@ SecUnregisterSignalHandler (
   IN      UINTN                       SignalNumber
   );
 
-EFI_STATUS
-SignalOpen (
-  IN  EMU_IO_THUNK_PROTOCOL  *This
-  );
-
-EFI_STATUS
-SignalClose (
-  IN  EMU_IO_THUNK_PROTOCOL  *This
-  );
-
 /**
   Get IsSigTermSignaled value.
 
@@ -1190,6 +1180,74 @@ VOID
 EFIAPI
 SetIsSigTermSignaled (
   IN      UINT32   value
+  );
+
+EFI_STATUS
+EmuSignalThunkOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  );
+
+EFI_STATUS
+EmuSignalThunkClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  );
+
+/**
+  Acquire the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was acquired successfully.
+  @retval EFI_TIMEOUT                 Acquiring the mailbox failed.
+
+**/
+EFI_STATUS
+SecDbusAcquireMailbox (
+  VOID
+  );
+
+/**
+  Release the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was released successfully.
+  @retval EFI_TIMEOUT                 Releasing the mailbox failed.
+
+**/
+EFI_STATUS
+SecDbusReleaseMailbox (
+  VOID
+  );
+
+/**
+  Wait for a new message to be stored in the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 A new message is in the mailbox
+  @retval EFI_TIMEOUT                 Waiting for a new message failed.
+
+**/
+EFI_STATUS
+SecDbusWaitForMessage (
+  VOID
+  );
+
+/**
+  Signal that the message has been successfully processed and the results
+  are waiting in the PRM Dispatch Service Mailbox
+
+  @retval None
+
+**/
+VOID
+SecDbusMessageResponseReady (
+  VOID
+  );
+
+EFI_STATUS
+SecDbusPrmdServiceThunkOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  );
+
+EFI_STATUS
+SecDbusPrmdServiceThunkClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
   );
 
 #endif

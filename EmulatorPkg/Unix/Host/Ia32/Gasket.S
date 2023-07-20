@@ -1539,8 +1539,8 @@ ASM_PFX(GasketUnregisterSignalHandler):
   leave
   ret
 
-ASM_GLOBAL ASM_PFX(GasketSignalOpen)
-ASM_PFX(GasketSignalOpen):
+ASM_GLOBAL ASM_PFX(GasketEmuSignalThunkOpen)
+ASM_PFX(GasketEmuSignalThunkOpen):
   pushl %ebp
   movl  %esp, %ebp
   subl  $24, %esp      // sub extra 16 from the stack for alignment
@@ -1548,13 +1548,13 @@ ASM_PFX(GasketSignalOpen):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(SignalOpen)
+  call    ASM_PFX(EmuSignalThunkOpen)
 
   leave
   ret
 
-ASM_GLOBAL ASM_PFX(GasketSignalClose)
-ASM_PFX(GasketSignalClose):
+ASM_GLOBAL ASM_PFX(GasketEmuSignalThunkClose)
+ASM_PFX(GasketEmuSignalThunkClose):
   pushl %ebp
   movl  %esp, %ebp
   subl  $24, %esp      // sub extra 16 from the stack for alignment
@@ -1562,7 +1562,7 @@ ASM_PFX(GasketSignalClose):
   movl  8(%ebp), %eax
   movl  %eax, (%esp)
 
-  call    ASM_PFX(SignalClose)
+  call    ASM_PFX(EmuSignalThunkClose)
 
   leave
   ret
@@ -1592,3 +1592,5 @@ ASM_PFX(GasketSetIsSigTermSignaled):
 
   leave
   ret
+
+//@todo Add gaskets

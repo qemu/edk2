@@ -335,7 +335,7 @@ EMU_SIGNAL_THUNK_PROTOCOL  gEmuSignalThunk = {
 };
 
 EFI_STATUS
-SignalOpen (
+EmuSignalThunkOpen (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   )
 {
@@ -350,7 +350,7 @@ SignalOpen (
 }
 
 EFI_STATUS
-SignalClose (
+EmuSignalThunkClose (
   IN  EMU_IO_THUNK_PROTOCOL  *This
   )
 {
@@ -362,7 +362,7 @@ EMU_IO_THUNK_PROTOCOL  gSignalThunkIo = {
   NULL,
   NULL,
   0,
-  GasketSignalOpen,
-  GasketSignalClose,
+  GasketEmuSignalThunkOpen,
+  GasketEmuSignalThunkClose,
   NULL
 };

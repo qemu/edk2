@@ -1678,8 +1678,8 @@ ASM_PFX(GasketUnregisterSignalHandler):
   popq    %rbp
   ret
 
-ASM_GLOBAL ASM_PFX(GasketSignalOpen)
-ASM_PFX(GasketSignalOpen):
+ASM_GLOBAL ASM_PFX(GasketEmuSignalThunkOpen)
+ASM_PFX(GasketEmuSignalThunkOpen):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -1688,15 +1688,15 @@ ASM_PFX(GasketSignalOpen):
 
   movq    %rcx, %rdi    // Swizzle args
 
-  call    ASM_PFX(SignalOpen)
+  call    ASM_PFX(EmuSignalThunkOpen)
 
   popq    %rdi          // restore state
   popq    %rsi
   popq    %rbp
   ret
 
-ASM_GLOBAL ASM_PFX(GasketSignalClose)
-ASM_PFX(GasketSignalClose):
+ASM_GLOBAL ASM_PFX(GasketEmuSignalThunkClose)
+ASM_PFX(GasketEmuSignalThunkClose):
   pushq   %rbp            // stack frame is for the debugger
   movq    %rsp, %rbp
 
@@ -1705,7 +1705,7 @@ ASM_PFX(GasketSignalClose):
 
   movq    %rcx, %rdi    // Swizzle args
 
-  call    ASM_PFX(SignalClose)
+  call    ASM_PFX(EmuSignalThunkClose)
 
   popq    %rdi          // restore state
   popq    %rsi
@@ -1744,3 +1744,5 @@ ASM_PFX(GasketSetIsSigTermSignaled):
   popq    %rsi
   popq    %rbp
   ret
+
+//@todo Add gaskets

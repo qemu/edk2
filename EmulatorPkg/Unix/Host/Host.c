@@ -166,9 +166,19 @@ main (
   //
   AddThunkProtocol (&gPthreadThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuApCount), FALSE);
   AddThunkProtocol (&gSignalThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuSignal), FALSE);
+  AddThunkProtocol (&gDbusPrmdServiceThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuDbusPrmdService), FALSE);
 #if defined (MDE_CPU_ARM)
   AddThunkProtocol (&gCacheThunkIo, (CHAR16 *)PcdGetPtr (PcdEmuCache), FALSE);
 #endif
+
+  //
+  // Initialize D-BUS background listener thread
+  //
+  Status = SecDbusInitializeListener ();
+  if (EFI_ERROR (Status)) {
+    printf ("ERROR : Can not start D-BUS listener thread.  Exiting.\n");
+    exit (1);
+  }
 
   // EmuSecLibConstructor ();
 

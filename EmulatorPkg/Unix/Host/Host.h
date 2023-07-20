@@ -373,6 +373,65 @@ SecInvokeSignalHandler (
   IN OUT  void                      *ucontext
   );
 
+/**
+  Acquire the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was acquired successfully.
+  @retval EFI_TIMEOUT                 Acquiring the mailbox failed.
+
+**/
+EFI_STATUS
+SecDbusAcquireMailbox (
+  VOID
+  );
+
+/**
+  Release the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was released successfully.
+  @retval EFI_TIMEOUT                 Releasing the mailbox failed.
+
+**/
+EFI_STATUS
+SecDbusReleaseMailbox (
+  VOID
+  );
+
+/**
+  Wait for a new message to be stored in the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 A new message is in the mailbox
+  @retval EFI_TIMEOUT                 Waiting for a new message failed.
+
+**/
+EFI_STATUS
+SecDbusWaitForMessage (
+  VOID
+  );
+
+/**
+  Signal that the message has been successfully processed and the results
+  are waiting in the PRM Dispatch Service Mailbox
+
+  @retval None
+
+**/
+VOID
+SecDbusMessageResponseReady (
+  VOID
+  );
+
+/**
+  Initialize the background worker thread for D-BUS communication
+
+  @retval EFI_SUCCESS                 The D-BUS listener was activated successfully.
+
+**/
+EFI_STATUS
+SecDbusInitializeListener (
+  VOID
+  );
+
 extern EMU_THUNK_PROTOCOL     gEmuThunkProtocol;
 //extern EMU_IO_THUNK_PROTOCOL  gX11ThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gPosixFileSystemThunkIo;
@@ -381,5 +440,6 @@ extern EMU_IO_THUNK_PROTOCOL  gBlockIoThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gSnpThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gCacheThunkIo;
 extern EMU_IO_THUNK_PROTOCOL  gSignalThunkIo;
+extern EMU_IO_THUNK_PROTOCOL  gDbusPrmdServiceThunkIo;
 
 #endif

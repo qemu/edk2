@@ -947,24 +947,6 @@ GasketUnregisterSignalHandler (
   return SecUnregisterSignalHandler (SignalNumber);
 }
 
-EFI_STATUS
-EFIAPI
-GasketSignalOpen (
-  IN  EMU_IO_THUNK_PROTOCOL  *This
-  )
-{
-  return SignalOpen (This);
-}
-
-EFI_STATUS
-EFIAPI
-GasketSignalClose (
-  IN  EMU_IO_THUNK_PROTOCOL  *This
-  )
-{
-  return SignalClose (This);
-}
-
 UINT32
 EFIAPI
 GasketGetIsSigTermSignaled (
@@ -981,4 +963,100 @@ GasketSetIsSigTermSignaled (
   )
 {
   return SetIsSigTermSignaled (value);
+}
+
+EFI_STATUS
+EFIAPI
+GasketEmuSignalThunkOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  )
+{
+  return EmuSignalThunkOpen (This);
+}
+
+EFI_STATUS
+EFIAPI
+GasketEmuSignalThunkClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  )
+{
+  return EmuSignalThunkClose (This);
+}
+
+/**
+  Acquire the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was acquired successfully.
+  @retval EFI_TIMEOUT                 Acquiring the mailbox failed.
+
+**/
+EFI_STATUS
+GasketEmuDbusAcquireMailbox (
+  VOID
+  )
+{
+  return SecDbusAcquireMailbox ();
+}
+
+/**
+  Release the lock semaphore for the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 The mailbox was released successfully.
+  @retval EFI_TIMEOUT                 Releasing the mailbox failed.
+
+**/
+EFI_STATUS
+GasketEmuDbusReleaseMailbox (
+  VOID
+  )
+{
+  return SecDbusReleaseMailbox ();
+}
+
+/**
+  Wait for a new message to be stored in the PRM Dispatch Service Mailbox
+
+  @retval EFI_SUCCESS                 A new message is in the mailbox
+  @retval EFI_TIMEOUT                 Waiting for a new message failed.
+
+**/
+EFI_STATUS
+GasketEmuDbusWaitForMessage (
+  VOID
+  )
+{
+  return SecDbusWaitForMessage ();
+}
+
+/**
+  Signal that the message has been successfully processed and the results
+  are waiting in the PRM Dispatch Service Mailbox
+
+  @retval None
+
+**/
+VOID
+GasketEmuDbusMessageResponseReady (
+  VOID
+  )
+{
+  return SecDbusMessageResponseReady ();
+}
+
+EFI_STATUS
+EFIAPI
+GasketEmuDbusThunkOpen (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  )
+{
+  return SecDbusPrmdServiceThunkOpen (This);
+}
+
+EFI_STATUS
+EFIAPI
+GasketEmuDbusThunkClose (
+  IN  EMU_IO_THUNK_PROTOCOL  *This
+  )
+{
+  return SecDbusPrmdServiceThunkClose (This);
 }
